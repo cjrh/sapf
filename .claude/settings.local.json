@@ -18,7 +18,8 @@
       "mcp__cargo__cargo_check",
       "Bash(rustc:*)",
       "Bash(./test_stack_underflow)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

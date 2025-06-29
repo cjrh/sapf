@@ -56,6 +56,31 @@ pub trait Object: fmt::Debug + fmt::Display + Send + Sync {
     
     /// Clone this object
     fn clone_object(&self) -> Arc<dyn Object>;
+    
+    /// Apply a unary mathematical operation to this object
+    fn unary_op(&self, _thread: &mut crate::vm::Thread, op: &dyn crate::core::math_ops::UnaryOp) -> Result<Value> {
+        // Default implementation - try to convert to float and apply operation
+        let float_val = self.as_float()?;
+        let result = op.op(float_val);
+        Ok(Value::Real(result))
+    }
+    
+    /// Apply a binary mathematical operation to this object
+    fn binary_op(&self, _thread: &mut crate::vm::Thread, op: &dyn crate::core::math_ops::BinaryOp, other: Value) -> Result<Value> {
+        // Default implementation - try to convert both to float and apply operation
+        let self_float = self.as_float()?;
+        let other_float = other.as_float()?;
+        let result = op.op(self_float, other_float);
+        Ok(Value::Real(result))
+    }
+    
+    /// Apply a binary mathematical operation with a real number as left operand
+    fn binary_op_with_real(&self, _thread: &mut crate::vm::Thread, op: &dyn crate::core::math_ops::BinaryOp, real_val: f64) -> Result<Value> {
+        // Default implementation - try to convert this to float and apply operation
+        let self_float = self.as_float()?;
+        let result = op.op(real_val, self_float);
+        Ok(Value::Real(result))
+    }
 }
 
 /// The central Value type in SAPF
