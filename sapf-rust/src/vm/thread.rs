@@ -6,7 +6,7 @@
 
 use std::rc::Rc;
 use std::sync::Arc;
-use crate::core::value::{Value, Object};
+use crate::core::value::{Value, Object, StringObject};
 use crate::core::error::{SapfError, Result};
 use crate::core::form::GForm;
 use crate::core::function::Function;
@@ -538,9 +538,17 @@ impl Thread {
                 }
                 
                 OpCode::PushLocalVar => {
-                    // TODO: Implement variable lookup by index
-                    // For now, just push the operand as a placeholder
-                    self.push(instruction.operand.clone());
+                    // Get local variable by index
+                    if let Value::Real(index) = instruction.operand {
+                        let index = index as usize;
+                        if index < self.local.len() {
+                            self.push(self.local[index].clone());
+                        } else {
+                            return Err(SapfError::OutOfRange);
+                        }
+                    } else {
+                        return Err(SapfError::WrongType);
+                    }
                 }
                 
                 OpCode::PushFunVar => {
@@ -549,13 +557,54 @@ impl Thread {
                 }
                 
                 OpCode::PushWorkspaceVar => {
-                    // TODO: Implement workspace variable lookup
-                    self.push(instruction.operand.clone());
+                    // Lookup workspace variable by symbol
+                    if let Value::Object(obj) = &instruction.operand {
+                        if let Some(_string_obj) = obj.as_any().downcast_ref::<StringObject>() {
+                            // Look up in workspace
+                            if let Some(workspace) = &self.workspace {
+                                match workspace.get(&Value::Object(obj.clone())) {
+                                    Some(value) => self.push(value),
+                                    None => {
+                                        // Variable not found - push as symbol (late binding)
+                                        self.push(instruction.operand.clone());
+                                    }
+                                }
+                            } else {
+                                // No workspace - push as symbol (late binding)
+                                self.push(instruction.operand.clone());
+                            }
+                        } else {
+                            return Err(SapfError::WrongType);
+                        }
+                    } else {
+                        return Err(SapfError::WrongType);
+                    }
                 }
                 
                 OpCode::CallImmediate => {
-                    // TODO: Implement immediate function calls
-                    // For now, this is a placeholder
+                    // Call a built-in function immediately
+                    if let Value::Object(obj) = &instruction.operand {
+                        // Look up function in VM builtins
+                        use crate::vm::vm::VM;
+                        let vm = VM::instance();
+                        match vm.lookup(&Value::Object(obj.clone())) {
+                            Some(function_value) => {
+                                // Call the function
+                                if function_value.is_function() {
+                                    function_value.apply(self)?;
+                                } else {
+                                    // Not a function - just push the value
+                                    self.push(function_value);
+                                }
+                            }
+                            None => {
+                                // Function not found - push as symbol for late binding
+                                self.push(instruction.operand.clone());
+                            }
+                        }
+                    } else {
+                        return Err(SapfError::WrongType);
+                    }
                 }
                 
                 OpCode::CallLocalVar => {
