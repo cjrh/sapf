@@ -221,7 +221,7 @@ impl CompileScope for InnerCompileScope {
         self.vars.len()
     }
     
-    fn direct_lookup(&self, th: &Thread, name: &Arc<StringObject>) -> Result<(ScopeType, usize, Option<Value>)> {
+    fn direct_lookup(&self, _th: &Thread, name: &Arc<StringObject>) -> Result<(ScopeType, usize, Option<Value>)> {
         // Check locals first
         for (i, local) in self.locals.iter().enumerate() {
             if local.name.as_str() == name.as_str() {

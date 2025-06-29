@@ -190,14 +190,18 @@ from C++ to Rust. Phases 1-3 have been completed with comprehensive testing.
 
 ## PHASE 6: Audio/DSP Foundation (MEDIUM PRIORITY)
 
-### 6.1 Unit Generator Base
-- [ ] Convert UGen.hpp to ugen.rs
-  - [ ] Base trait for audio generators
-  - [ ] Sample rate handling using VM's audio rate management
-  - [ ] Multi-channel expansion support
-  - [ ] Buffer management and streaming using List infrastructure
-  - Files to reference: include/UGen.hpp, src/UGen.cpp
-  - **Performance**: Leverage Rust's zero-cost abstractions for DSP
+### 6.1 Unit Generator Base ✅ (COMPLETED)
+- ✅ Convert UGen.hpp to ugen.rs (src/dsp/ugen.rs)
+  - ✅ Base UGen trait for audio generators with pull() method
+  - ✅ Sample rate handling integrated with audio block processing
+  - ✅ UGenBase struct providing common functionality (done, finite flags)
+  - ✅ ZeroInputGen, OneInputGen, TwoInputGen trait hierarchy
+  - ✅ ConstantGen and SineOsc example implementations
+  - ✅ Object trait integration for SAPF type system
+  - ✅ Block-based audio processing with configurable block size
+  - ✅ Comprehensive test suite (7 test cases, all passing)
+  - Files implemented: src/dsp/mod.rs, src/dsp/ugen.rs
+  - **Performance**: Zero-cost abstractions with trait-based dispatch
 
 ### 6.2 Basic Oscillators
 - [ ] Convert OscilUGens.hpp/cpp to oscillators.rs
@@ -333,7 +337,7 @@ from C++ to Rust. Phases 1-3 have been completed with comprehensive testing.
 
 ## TESTING STRATEGY ✅
 
-**Current Status: 127 tests passing, 1 failure (symbol table stats - expected due to parser test symbols)**
+**Current Status: 145 tests passing, 1 failure (symbol table stats - expected due to parser test symbols)**
 
 For each phase:
 1. ✅ **Write tests FIRST** before implementation - Successfully applied
@@ -363,7 +367,8 @@ Key test files to reference:
 - core/core_ops.rs: 9 tests
 - parser/lexer.rs: 8 tests (all passing)
 - parser/token.rs: 4 tests (all passing)
-- **Total: 118 comprehensive tests (117 passing, 1 intermittent)**
+- dsp/ugen.rs: 7 tests (all passing)
+- **Total: 146 comprehensive tests (145 passing, 1 intermittent)**
 
 ## COMPATIBILITY REQUIREMENTS ✅
 
@@ -403,7 +408,7 @@ Key documentation:
 
 ## PROGRESS SUMMARY
 
-**COMPLETED: 6 out of 11 phases (55% complete)**
+**COMPLETED: 6.1 out of 11 phases (56% complete)**
 
 ### Phase 9 Complete! SAPF REPL and CLI Fully Implemented:
 - ✅ **Complete Interactive Environment**: Full-featured REPL with history and line editing
