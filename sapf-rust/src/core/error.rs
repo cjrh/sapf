@@ -103,6 +103,13 @@ pub enum SapfError {
     EmptyCallStack {
         operation: String,
     },
+    
+    /// Wrong number of arguments provided
+    #[error("Wrong number of arguments: expected {expected}, got {actual}")]
+    WrongArgumentCount {
+        expected: usize,
+        actual: usize,
+    },
 }
 
 /// Result type alias for SAPF operations
@@ -133,6 +140,7 @@ impl SapfError {
             SapfError::InvalidType { .. } => -1018,
             SapfError::InvalidOpcode { .. } => -1019,
             SapfError::EmptyCallStack { .. } => -1020,
+            SapfError::WrongArgumentCount { .. } => -1021,
         }
     }
     

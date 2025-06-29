@@ -2,6 +2,7 @@
 //! 
 //! This module contains the fundamental building blocks of the SAPF interpreter.
 
+pub mod core_ops;
 pub mod error;
 pub mod form;
 pub mod function;
@@ -13,6 +14,7 @@ pub mod reference;
 pub mod symbol;
 pub mod value;
 
+pub use core_ops::*;
 pub use error::{SapfError, Result};
 pub use form::{Form, GForm, Table, GTable, linearize_inheritance};
 pub use function::{Function, FunctionDef, Primitive, Bytecode, Opcode, PrimitiveFn};

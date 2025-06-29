@@ -57,6 +57,9 @@ pub trait Object: fmt::Debug + fmt::Display + Send + Sync {
     /// Clone this object
     fn clone_object(&self) -> Arc<dyn Object>;
     
+    /// Get this object as Any for downcasting
+    fn as_any(&self) -> &dyn std::any::Any;
+    
     /// Apply a unary mathematical operation to this object
     fn unary_op(&self, _thread: &mut crate::vm::Thread, op: &dyn crate::core::math_ops::UnaryOp) -> Result<Value> {
         // Default implementation - try to convert to float and apply operation
@@ -222,6 +225,53 @@ impl Value {
             Value::Nil => false,
         }
     }
+    
+    /// Apply this value as a function
+    pub fn apply(&self, thread: &mut crate::vm::Thread) -> Result<()> {
+        match self {
+            Value::Real(_) => Err(SapfError::WrongType),
+            Value::Object(obj) => {
+                if let Ok(function) = obj.as_any().downcast_ref::<crate::core::function::Function>() {
+                    function.apply(thread)
+                } else if let Ok(primitive) = obj.as_any().downcast_ref::<crate::core::function::Primitive>() {
+                    primitive.apply(thread)
+                } else {
+                    Err(SapfError::WrongType)
+                }
+            }
+            Value::Nil => Err(SapfError::WrongType),
+        }
+    }
+    
+    /// Compare two values
+    pub fn compare(&self, other: &Value) -> Result<std::cmp::Ordering> {
+        use std::cmp::Ordering;
+        
+        match (self, other) {
+            (Value::Real(a), Value::Real(b)) => Ok(a.partial_cmp(b).unwrap_or(Ordering::Equal)),
+            (Value::Nil, Value::Nil) => Ok(Ordering::Equal),
+            (Value::Nil, _) => Ok(Ordering::Less),
+            (_, Value::Nil) => Ok(Ordering::Greater),
+            (Value::Real(_), Value::Object(_)) => Ok(Ordering::Less),
+            (Value::Object(_), Value::Real(_)) => Ok(Ordering::Greater),
+            (Value::Object(a), Value::Object(b)) => {
+                // For objects, compare string representations
+                let a_str = format!("{}", a);
+                let b_str = format!("{}", b);
+                Ok(a_str.cmp(&b_str))
+            }
+        }
+    }
+    
+    /// Check if two values are equal
+    pub fn equals(&self, other: &Value) -> Result<bool> {
+        Ok(self.compare(other)? == std::cmp::Ordering::Equal)
+    }
+    
+    /// Get a printable string representation
+    pub fn print(&self) -> String {
+        format!("{}", self)
+    }
 }
 
 impl fmt::Display for Value {
@@ -330,6 +380,10 @@ impl StringObject {
         &self.value
     }
     
+    pub fn value(&self) -> &str {
+        &self.value
+    }
+    
     pub fn len(&self) -> usize {
         self.value.len()
     }
@@ -369,6 +423,10 @@ impl Object for StringObject {
     
     fn clone_object(&self) -> Arc<dyn Object> {
         Arc::new(self.clone())
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
     
     fn is_zero(&self) -> bool {
