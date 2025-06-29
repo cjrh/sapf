@@ -545,13 +545,13 @@ The port is complete when:
 
 ### Ready for Phase 9 (REPL):
 - **VM infrastructure**: Complete and tested
-- **Function system**: Ready for parsed function definitions
-- **Stack operations**: Ready for bytecode execution
+- **Parser system**: Complete lexer, AST parser, and bytecode compiler
+- **Execution engine**: Bytecode VM ready for interactive use
 - **Symbol table**: Ready for identifier resolution
 - **Error handling**: Comprehensive error types in place
 
 ### Next Steps:
-1. **Begin Phase 5** - Implement lexer and parser
-2. **Connect to VM** - Wire parser output to execution engine
-3. **Build REPL** - Interactive development environment
+1. **Begin Phase 9** - Implement command-line REPL interface
+2. **Add variable binding** - Connect CompileScope to bytecode generation
+3. **Implement function calls** - Wire up built-in function registry
 4. **Add audio** - Basic playback functionality
