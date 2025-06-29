@@ -288,6 +288,20 @@ impl Parser {
         Ok(ASTNode::Lambda { args, help, body })
     }
 
+    /// Compile AST nodes to bytecode
+    pub fn compile(&self, nodes: &[ASTNode]) -> Result<crate::vm::opcode::Bytecode> {
+        use crate::parser::codegen::CodeGenerator;
+        
+        let mut codegen = CodeGenerator::new();
+        codegen.generate_program(nodes)
+    }
+    
+    /// Compile and execute AST nodes using bytecode
+    pub fn compile_and_execute(&self, nodes: &[ASTNode], thread: &mut Thread) -> Result<()> {
+        let bytecode = self.compile(nodes)?;
+        thread.execute_bytecode(&bytecode)
+    }
+
     /// Execute AST nodes using the VM
     pub fn execute(&self, nodes: &[ASTNode], thread: &mut Thread) -> Result<()> {
         for node in nodes {
@@ -460,6 +474,33 @@ mod tests {
                 assert_eq!(body.len(), 3);
             }
             _ => panic!("Expected lambda"),
+        }
+    }
+    
+    #[test]
+    fn test_bytecode_compilation() {
+        let mut lexer = Lexer::new("1 2 [3 4]");
+        let tokens = lexer.tokenize().unwrap();
+        let mut parser = Parser::new(tokens);
+        let nodes = parser.parse_all().unwrap();
+        
+        // Test bytecode compilation
+        let bytecode = parser.compile(&nodes).unwrap();
+        assert_eq!(bytecode.len(), 5); // 1, 2, 3, 4, newlist
+        
+        // Test bytecode execution
+        let mut thread = Thread::new();
+        parser.compile_and_execute(&nodes, &mut thread).unwrap();
+        
+        assert_eq!(thread.depth(), 3); // 1, 2, and the list [3, 4]
+        
+        // Verify the list was created correctly
+        let list = thread.pop().unwrap();
+        if let Value::Object(obj) = list {
+            let list_ref = obj.as_any().downcast_ref::<List>().expect("Expected List");
+            assert_eq!(list_ref.length(), 2);
+        } else {
+            panic!("Expected list object");
         }
     }
 }

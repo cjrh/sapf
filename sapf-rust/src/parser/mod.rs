@@ -8,7 +8,9 @@
 pub mod lexer;
 pub mod parser;
 pub mod token;
+pub mod codegen;
 
 pub use lexer::*;
 pub use parser::*;
 pub use token::*;
+pub use codegen::*;

@@ -6,7 +6,9 @@
 pub mod thread;
 pub mod vm;
 pub mod compile_scope;
+pub mod opcode;
 
 pub use thread::{Thread, Rate};
 pub use vm::VM;
 pub use compile_scope::{CompileScope, TopCompileScope, InnerCompileScope, ParenCompileScope};
+pub use opcode::{OpCode, Instruction, Bytecode};

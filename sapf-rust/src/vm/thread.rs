@@ -523,6 +523,141 @@ impl Thread {
         result.push(']');
         result
     }
+    
+    /// Execute bytecode on this thread
+    pub fn execute_bytecode(&mut self, bytecode: &crate::vm::opcode::Bytecode) -> Result<()> {
+        use crate::vm::opcode::OpCode;
+        use crate::core::list::{List, Array};
+        use crate::core::form::{Form, Table};
+        use crate::core::symbol::get_symbol;
+        
+        for instruction in &bytecode.instructions {
+            match instruction.opcode {
+                OpCode::PushImmediate => {
+                    self.push(instruction.operand.clone());
+                }
+                
+                OpCode::PushLocalVar => {
+                    // TODO: Implement variable lookup by index
+                    // For now, just push the operand as a placeholder
+                    self.push(instruction.operand.clone());
+                }
+                
+                OpCode::PushFunVar => {
+                    // TODO: Implement function variable lookup
+                    self.push(instruction.operand.clone());
+                }
+                
+                OpCode::PushWorkspaceVar => {
+                    // TODO: Implement workspace variable lookup
+                    self.push(instruction.operand.clone());
+                }
+                
+                OpCode::CallImmediate => {
+                    // TODO: Implement immediate function calls
+                    // For now, this is a placeholder
+                }
+                
+                OpCode::CallLocalVar => {
+                    // TODO: Implement local variable function calls
+                }
+                
+                OpCode::CallFunVar => {
+                    // TODO: Implement function variable calls
+                }
+                
+                OpCode::CallWorkspaceVar => {
+                    // TODO: Implement workspace variable calls
+                }
+                
+                OpCode::NewVList => {
+                    // Create a new value list from stack items
+                    if let Value::Real(count) = instruction.operand {
+                        let count = count as usize;
+                        let mut values = Vec::new();
+                        
+                        for _ in 0..count {
+                            if let Ok(value) = self.pop() {
+                                values.push(value);
+                            } else {
+                                return Err(SapfError::StackUnderflow {
+                                    expected: count,
+                                    actual: 0,
+                                    operation: "NewVList".to_string(),
+                                });
+                            }
+                        }
+                        values.reverse(); // Maintain order
+                        
+                        let array = Array::from_values(values);
+                        let list = List::from_array(array);
+                        self.push(Value::Object(Arc::new(list)));
+                    }
+                }
+                
+                OpCode::NewZList => {
+                    // Create a new numeric list from stack items
+                    if let Value::Real(count) = instruction.operand {
+                        let count = count as usize;
+                        let mut values = Vec::new();
+                        
+                        for _ in 0..count {
+                            if let Ok(value) = self.pop() {
+                                values.push(value);
+                            } else {
+                                return Err(SapfError::StackUnderflow {
+                                    expected: count,
+                                    actual: 0,
+                                    operation: "NewZList".to_string(),
+                                });
+                            }
+                        }
+                        values.reverse(); // Maintain order
+                        
+                        let array = Array::from_values(values);
+                        let list = List::from_array(array);
+                        self.push(Value::Object(Arc::new(list)));
+                    }
+                }
+                
+                OpCode::NewForm => {
+                    // Create a new form from key-value pairs on stack
+                    if let Value::Real(pair_count) = instruction.operand {
+                        let pair_count = pair_count as usize;
+                        let mut pairs = Vec::new();
+                        
+                        for _ in 0..pair_count {
+                            // Pop value, then key
+                            let value = self.pop().map_err(|_| 
+                                SapfError::StackUnderflowSimple)?;
+                            let key = self.pop().map_err(|_| 
+                                SapfError::StackUnderflowSimple)?;
+                            pairs.push((key, value));
+                        }
+                        pairs.reverse(); // Maintain order
+                        
+                        let table = Table::from_pairs(pairs);
+                        let form = Form::from_table(table);
+                        self.push(Value::Object(Arc::new(form)));
+                    }
+                }
+                
+                OpCode::Return => {
+                    // TODO: Implement function return
+                    break; // For now, just exit the bytecode execution
+                }
+                
+                _ => {
+                    // TODO: Implement remaining opcodes
+                    return Err(SapfError::CompileError(
+                        format!("Unimplemented opcode: {}", instruction.opcode)
+                    ));
+                }
+            }
+        }
+        
+        Ok(())
+    }
 }
 
 impl Default for Thread {
