@@ -19,7 +19,8 @@
       "Bash(rustc:*)",
       "Bash(./test_stack_underflow)",
       "Bash(rm:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "mcp__ht-mcp__ht_close_session"
     ],
     "deny": []
   }
