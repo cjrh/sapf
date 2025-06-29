@@ -31,6 +31,10 @@ pub enum SapfError {
     #[error("syntax")]
     Syntax,
     
+    /// Parse error with context
+    #[error("parse error: {0}")]
+    ParseError(String),
+    
     /// Internal error (bug in interpreter)
     #[error("internal bug")]
     InternalError,
@@ -141,6 +145,7 @@ impl SapfError {
             SapfError::InvalidOpcode { .. } => -1019,
             SapfError::EmptyCallStack { .. } => -1020,
             SapfError::WrongArgumentCount { .. } => -1021,
+            SapfError::ParseError(_) => -1022,
         }
     }
     

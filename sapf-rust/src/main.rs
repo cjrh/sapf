@@ -4,6 +4,7 @@
 
 mod core;
 mod vm;
+mod parser;
 
 use anyhow::Result;
 use vm::VM;

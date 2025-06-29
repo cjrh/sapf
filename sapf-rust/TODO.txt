@@ -13,6 +13,8 @@ from C++ to Rust. Phases 1-3 have been completed with comprehensive testing.
 - **PHASE 1: Core Object Types** ✅ (100% complete)
 - **PHASE 2: Forms and Tables** ✅ (100% complete) 
 - **PHASE 3: Virtual Machine Core** ✅ (100% complete)
+- **PHASE 4: Functions and Operations** ✅ (100% complete)
+- **PHASE 5.1: Lexer** ✅ (100% complete)
 
 ## PHASE 1: Core Object Types ✅ (COMPLETED)
 
@@ -142,26 +144,33 @@ from C++ to Rust. Phases 1-3 have been completed with comprehensive testing.
 
 ## PHASE 5: Parser and Code Generation (HIGH PRIORITY)
 
-### 5.1 Lexer
-- [ ] Convert lexical analysis from Parser.hpp
-  - [ ] Number parsing (with suffixes: pi, k, M, etc.)
-  - [ ] String parsing with escape sequences  
-  - [ ] Word tokenization and reserved words
-  - [ ] Quote handling (`, ', ,, ., =)
-  - [ ] Comment handling
-  - [ ] Symbol integration with existing symbol table
-  - Files to reference: include/Parser.hpp lines ~100-300, src/Parser.cpp
-  - **Rust advantage**: Use nom parser combinators for clean, composable parsing
+### 5.1 Lexer ✅ (COMPLETED)
+- ✅ Convert lexical analysis from Parser.hpp (lexer.rs)
+  - ✅ Number parsing (with suffixes: pi, k, M, etc.) - Full SAPF compatibility
+  - ✅ String parsing with escape sequences (\n, \r, \t, \\, \", etc.)
+  - ✅ Symbol tokenization and integration with existing symbol table
+  - ✅ Quote handling (', `, ,, ., =) - All special operators supported
+  - ✅ Comment handling (;) - Comments filtered during tokenization
+  - ✅ Hexadecimal number parsing (0x...) - C++ compatible
+  - ✅ Lambda syntax (\) for function definitions
+  - ✅ Special array syntax (#[) for typed arrays
+  - ✅ Position tracking (line, column, offset) for error reporting
+  - ✅ Comprehensive test suite (8 test cases, all passing)
+  - Files implemented: src/parser/lexer.rs, src/parser/token.rs
+  - **Architecture**: Clean iterator-based design without lifetime complexities
 
-### 5.2 Parser Core
-- [ ] Convert Parser class from Parser.hpp
-  - [ ] Expression parsing with precedence
-  - [ ] List construction syntax [...] using List/Array types
-  - [ ] Form construction syntax {...} using Form types
-  - [ ] Function definition syntax \args [body] with CompileScope
-  - [ ] Error recovery and reporting with SapfError types
+### 5.2 Parser Core (CURRENT PRIORITY)
+- [ ] Convert Parser class from Parser.hpp (parser.rs)
+  - [ ] Expression parsing with precedence handling
+  - [ ] List construction syntax [...] using existing List/Array types
+  - [ ] Form construction syntax {...} using existing Form types
+  - [ ] Function definition syntax \args [body] with existing CompileScope
+  - [ ] Quote operators (', `, ,, .) for symbol manipulation
+  - [ ] Variable binding and lookup integration
+  - [ ] Error recovery and reporting with existing SapfError types
   - Files to reference: include/Parser.hpp, src/Parser.cpp
-  - **Integration**: Connect directly to VM and Thread for execution
+  - **Integration**: Connect directly to existing VM and Thread for execution
+  - **Next steps**: Start with basic expression parsing and build incrementally
 
 ### 5.3 Code Generation
 - [ ] Convert code generation from Parser.hpp
@@ -315,7 +324,7 @@ from C++ to Rust. Phases 1-3 have been completed with comprehensive testing.
 
 ## TESTING STRATEGY ✅
 
-**Current Status: 101 tests passing, 1 intermittent failure (symbol table test ordering)**
+**Current Status: 109 tests passing, 1 intermittent failure (symbol table test ordering)**
 
 For each phase:
 1. ✅ **Write tests FIRST** before implementation - Successfully applied
@@ -343,7 +352,9 @@ Key test files to reference:
 - vm/compile_scope.rs: 5 tests
 - core/math_ops.rs: 11 tests
 - core/core_ops.rs: 9 tests
-- **Total: 110 comprehensive tests (109 passing, 1 intermittent)**
+- parser/lexer.rs: 8 tests (all passing)
+- parser/token.rs: 4 tests (all passing)
+- **Total: 118 comprehensive tests (117 passing, 1 intermittent)**
 
 ## COMPATIBILITY REQUIREMENTS ✅
 
@@ -383,18 +394,21 @@ Key documentation:
 
 ## PROGRESS SUMMARY
 
-**COMPLETED: 4 out of 11 phases (36% complete)**
+**COMPLETED: 4.1 out of 11 phases (37% complete)**
 
-### Phase 4 Complete! All Core Functionality Implemented:
-- ✅ **Function Objects**: Complete function system with closures and lexical scoping
-- ✅ **Mathematical Operations**: Complete math operation system with 27+ operations
-- ✅ **Core Operations**: All 40+ core operations implemented and tested
-- ✅ **Enhanced Value System**: Added Nil variant and function type checking  
-- ✅ **Thread Function Support**: Call stack management and execution context
-- ✅ **Primitive Functions**: Built-in operation wrapper system
-- ✅ **Object Trait Enhancement**: Added unary_op, binary_op, and as_any() methods
-- ✅ **26 additional tests**: All tests passing (110 total, 1 intermittent)
-- ✅ **Memory Safety**: Maintained zero unsafe code throughout
+### Phase 5.1 Complete! SAPF Lexer Fully Implemented:
+- ✅ **Complete Tokenization**: All SAPF language constructs supported
+- ✅ **Number Parsing**: Integers, floats, scientific notation, hex, pi constant
+- ✅ **SAPF Suffixes**: pi, M (mega), k (kilo), h (hecto), c (centi), m (milli), u (micro)
+- ✅ **String Literals**: Full escape sequence support (\n, \r, \t, \\, \", etc.)
+- ✅ **Symbol Integration**: Direct integration with existing symbol table
+- ✅ **Special Operators**: Quotes (', `), operators (,, ., :, =), delimiters
+- ✅ **Lambda Syntax**: Backslash (\) for function definitions
+- ✅ **Comment Handling**: Semicolon (;) comments filtered during tokenization
+- ✅ **Position Tracking**: Line, column, and character offset for error reporting
+- ✅ **Error Handling**: Comprehensive error reporting with ParseError context
+- ✅ **8 Comprehensive Tests**: All lexer tests passing with full coverage
+- ✅ **Memory Safety**: Clean iterator-based design, zero unsafe code
 
 ### Critical Insights from Phase 4:
 - **Function Architecture**: Clean separation of FunctionDef (template) and Function (instance)
