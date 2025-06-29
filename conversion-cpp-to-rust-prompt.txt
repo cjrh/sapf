@@ -1,0 +1,26 @@
+This repo is a C++ project that implements a Forth-like programming language for sound synthesis and playing
+music. Your task is to convert this into the Rust programming language. 
+
+**Background**
+This project is implemented in C++ and is intended to be built in the XCode IDE
+which is only available on mac systems. Your task is to convert this project to use the
+Rust programming language.
+
+**Instructions**
+- Convert this to a Rust project. 
+- You can create a new Rust crate inside this repo, and work inside that crate directory. This way I can easily delete the directory and start over if necessary.
+- It is important to make sure that `sapf` coding language is exactly preserved: it must be possible that sapf scripts developed with the C++ version work exactly the same as in the Rust version. Unfortunately we cannot compile this C++ version so you will have to be careful.
+- Plan your work ahead of time and work methodically. When you implement a module, write tests for that module first before moving onto conversion of another module, and then work to make those tests pass before moving on to conversion of the next module. This way, it will be easier to reason about test failures later when much more of the rust code is fleshed out.
+- C++ idioms don't always map exactly 1:1 to Rust idioms. Always prefer Rust idioms.
+- Prefer simpler code, but only when possible.
+- Prefer the "newtype" wrapper idiom in Rust when possible. This makes it easier to extend the project later.
+
+**Guidelines**
+- If any UI layer is required, please use the Egui framework for
+visuals. I have a local checkout of the egui, which you can use as reference or documentation: `/home/caleb/Documents/repos/egui`
+- Don't use or wrap any 3rd party dependencies from the C++ ecosystem or the mac
+ecosystem; everything should be rust-native.
+- You may use the `crates` MCP server to look up suitable crates if you need something extra. It is preferred to avoid accumulating 3rd party dependencies but not at the expense of enormous local reimplementations. Prefer crates mentioned on the "blessed.rs" website.
+- You may use the `cargo` MCP server to perform typical rust project actions.
+- You may use the `context7` MCP server for help with any technologies that may be less familiar. For example, it has some Xcode information that might help explain how this Xcode project is built.
+- Refer to the sapf `README.txt` for more context and details about the language being implemented. The explanations are good. There are also .txt files in the repo directory with more examples.

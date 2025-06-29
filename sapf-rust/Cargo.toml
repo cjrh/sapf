@@ -1,0 +1,56 @@
+[package]
+name = "sapf"
+version = "0.1.0"
+edition = "2021"
+authors = ["SAPF Rust Port Contributors"]
+description = "Sound As Pure Form - A functional stack-based language for sound synthesis"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+# Core dependencies
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Audio processing
+cpal = "0.15"
+hound = "3.5"
+rubato = "0.15"
+
+# Math and DSP
+num-traits = "0.2"
+num-complex = "0.4"
+rustfft = "6.2"
+rand = "0.8"
+
+# Collections and data structures
+indexmap = "2.2"
+smallvec = "1.13"
+
+# Text processing and parsing
+nom = "7.1"
+
+# Optional UI dependencies
+egui = { version = "0.26", optional = true }
+eframe = { version = "0.26", optional = true }
+
+# Serialization (for saving/loading)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.4"
+approx = "0.5"
+
+[features]
+default = []
+gui = ["egui", "eframe"]
+
+[[bin]]
+name = "sapf"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

@@ -1,0 +1,296 @@
+SAPF Rust Port - TODO List
+==========================
+
+This file outlines the remaining work needed to complete the conversion of SAPF 
+from C++ to Rust. The core foundation has been completed.
+
+## COMPLETED ✅
+- Error handling system (error.rs)
+- Hash functions (hash.rs) 
+- Math library with lookup tables (math.rs)
+- Tagged Value type and Object trait (value.rs)
+- Basic project structure and dependencies
+
+## PHASE 1: Core Object Types (HIGH PRIORITY)
+
+### 1.1 Basic Collection Types
+- [ ] Convert List/Array from Object.hpp
+  - Implement both value lists (streams) and numeric lists (signals)
+  - Support for lazy evaluation and infinite sequences
+  - Auto-mapping operations (crucial for SAPF semantics)
+  - Files to reference: Object.hpp lines ~800-1200, Object.cpp
+
+### 1.2 Reference Types  
+- [ ] Convert Ref/ZRef from Object.hpp
+  - Mutable containers for values
+  - Thread-safe access patterns
+  - Files to reference: Object.hpp lines ~600-700
+
+### 1.3 String Objects
+- [ ] Convert String class from Object.hpp
+  - Extend basic StringObject in value.rs
+  - String manipulation operations
+  - Files to reference: Object.hpp lines ~400-500
+
+### 1.4 Symbol System
+- [ ] Convert symbol.hpp/cpp to symbol.rs
+  - Symbol table management
+  - Interning system for efficiency
+  - Files to reference: include/symbol.hpp, src/symbol.cpp
+
+## PHASE 2: Forms and Tables (HIGH PRIORITY)
+
+### 2.1 Form System (Dictionary/Record)
+- [ ] Convert Form/GForm from Object.hpp
+  - Key-value mappings with inheritance
+  - Multiple inheritance support (experimental in C++)
+  - Dylan-style method resolution order
+  - Files to reference: Object.hpp lines ~1400-1600
+
+### 2.2 Table System
+- [ ] Convert Table/GTable from Object.hpp  
+  - Hash table implementation
+  - Integration with symbol system
+  - Files to reference: Object.hpp lines ~1200-1400
+
+## PHASE 3: Virtual Machine Core (HIGH PRIORITY)
+
+### 3.1 Stack Management
+- [ ] Convert Thread class from VM.hpp
+  - Value stack operations
+  - Stack overflow/underflow detection
+  - Multiple stack support (data, call, etc.)
+  - Files to reference: include/VM.hpp lines ~200-400, src/VM.cpp
+
+### 3.2 VM State Management  
+- [ ] Convert VM class from VM.hpp
+  - Thread management
+  - Global state and workspace
+  - Compilation scopes
+  - Files to reference: include/VM.hpp lines ~100-200, src/VM.cpp
+
+### 3.3 Execution Context
+- [ ] Convert CompileScope from VM.hpp
+  - Lexical scoping for variables
+  - Binding management
+  - Files to reference: include/VM.hpp lines ~400-500
+
+## PHASE 4: Functions and Operations (HIGH PRIORITY)
+
+### 4.1 Function Objects
+- [ ] Convert Fun/Prim/FunDef from Object.hpp
+  - Function definitions with closures
+  - Primitive operation wrappers
+  - Help string support
+  - Files to reference: Object.hpp lines ~1000-1200
+
+### 4.2 Mathematical Operations
+- [ ] Convert MathOps.hpp/cpp to math_ops.rs
+  - Unary and binary operations
+  - Auto-mapping over collections
+  - Reducing and scanning operators (/, \, ^)
+  - Files to reference: include/MathOps.hpp, src/MathOps.cpp
+
+### 4.3 Core Operations
+- [ ] Convert CoreOps.cpp to core_ops.rs
+  - Basic stack operations (dup, swap, drop, etc.)
+  - Control flow operations
+  - Files to reference: src/CoreOps.cpp
+
+## PHASE 5: Parser and Code Generation (HIGH PRIORITY)
+
+### 5.1 Lexer
+- [ ] Convert lexical analysis from Parser.hpp
+  - Number parsing (with suffixes: pi, k, M, etc.)
+  - String parsing with escape sequences
+  - Word tokenization
+  - Quote handling (`, ', ,, ., =)
+  - Files to reference: include/Parser.hpp lines ~100-300, src/Parser.cpp
+
+### 5.2 Parser Core
+- [ ] Convert Parser class from Parser.hpp
+  - Expression parsing
+  - List construction syntax [...]
+  - Form construction syntax {...}
+  - Function definition syntax \args [body]
+  - Files to reference: include/Parser.hpp, src/Parser.cpp
+
+### 5.3 Code Generation
+- [ ] Convert code generation from Parser.hpp
+  - Bytecode or direct interpretation
+  - Optimization passes
+  - Files to reference: src/Parser.cpp compilation methods
+
+## PHASE 6: Audio/DSP Foundation (MEDIUM PRIORITY)
+
+### 6.1 Unit Generator Base
+- [ ] Convert UGen.hpp to ugen.rs
+  - Base trait for audio generators
+  - Sample rate handling
+  - Multi-channel expansion
+  - Files to reference: include/UGen.hpp, src/UGen.cpp
+
+### 6.2 Basic Oscillators
+- [ ] Convert OscilUGens.hpp/cpp to oscillators.rs
+  - Sine, sawtooth, pulse oscillators
+  - Lookup table integration
+  - Phase accumulation
+  - Files to reference: include/OscilUGens.hpp, src/OscilUGens.cpp
+
+### 6.3 Basic Filters
+- [ ] Convert FilterUGens.hpp/cpp to filters.rs
+  - Low-pass, high-pass, band-pass filters
+  - Resonant filters
+  - Files to reference: include/FilterUGens.hpp, src/FilterUGens.cpp
+
+## PHASE 7: I/O and Playback (MEDIUM PRIORITY)
+
+### 7.1 Audio Output
+- [ ] Convert Play.hpp/cpp to audio_output.rs
+  - Real-time audio playback using cpal
+  - Buffer management
+  - Files to reference: include/Play.hpp, src/Play.cpp
+
+### 7.2 Sound File I/O
+- [ ] Convert SoundFiles.hpp/cpp to sound_files.rs
+  - WAV file reading/writing using hound
+  - Audio format conversion
+  - Files to reference: include/SoundFiles.hpp, src/SoundFiles.cpp
+
+## PHASE 8: Advanced Features (LOW PRIORITY)
+
+### 8.1 Stream Operations
+- [ ] Convert StreamOps.cpp to stream_ops.rs
+  - Lazy evaluation primitives
+  - Infinite sequence operations
+  - Files to reference: src/StreamOps.cpp
+
+### 8.2 Set Operations
+- [ ] Convert SetOps.cpp to set_ops.rs
+  - Set theory operations
+  - Collection utilities
+  - Files to reference: src/SetOps.cpp
+
+### 8.3 Random Operations
+- [ ] Convert RandomOps.cpp to random_ops.rs
+  - Random number generators
+  - Random distributions
+  - Files to reference: src/RandomOps.cpp
+
+### 8.4 Delay Effects
+- [ ] Convert DelayUGens.hpp/cpp to delays.rs
+  - Delay lines and comb filters
+  - Reverb algorithms
+  - Files to reference: include/DelayUGens.hpp, src/DelayUGens.cpp
+
+## PHASE 9: REPL and CLI (MEDIUM PRIORITY)
+
+### 9.1 Command Line Interface
+- [ ] Implement command-line argument parsing
+  - Sample rate selection (-r)
+  - Prelude file loading (-p) 
+  - Help system (-h)
+  - Environment variable support
+
+### 9.2 REPL Implementation
+- [ ] Create read-eval-print loop
+  - Line editing and history
+  - Multi-line input support
+  - Error recovery
+  - Reference: original main.cpp behavior
+
+### 9.3 Help System
+- [ ] Implement built-in help
+  - `helpall` command
+  - `` `word help`` syntax
+  - Function documentation display
+
+## PHASE 10: Advanced Language Features (LOW PRIORITY)
+
+### 10.1 Multi-channel Expansion
+- [ ] Convert MultichannelExpansion.hpp/cpp
+  - Automatic stereo/multi-channel processing
+  - Channel routing
+  - Files to reference: include/MultichannelExpansion.hpp, src/MultichannelExpansion.cpp
+
+### 10.2 Each Operator Implementation
+- [ ] Implement @ operator semantics
+  - Nested mapping (@, @@, @@@, etc.)
+  - Ordered each operators (@1, @2, etc.)
+  - Outer product operations
+
+### 10.3 MIDI Support
+- [ ] Convert Midi.hpp/cpp to midi.rs
+  - MIDI input/output
+  - Note number conversions
+  - Files to reference: include/Midi.hpp, src/Midi.cpp
+
+## PHASE 11: Visualization and Analysis (OPTIONAL)
+
+### 11.1 Spectrograms
+- [ ] Convert Spectrogram.hpp/cpp using egui
+  - FFT-based analysis
+  - Real-time visualization
+  - Files to reference: include/Spectrogram.hpp, src/Spectrogram.cpp
+
+### 11.2 GUI Interface
+- [ ] Implement optional GUI using egui
+  - Enable with --features gui
+  - Real-time parameter control
+  - Waveform display
+
+## TESTING STRATEGY
+
+For each phase:
+1. **Write tests FIRST** before implementation
+2. **Test against C++ behavior** using examples from sapf-examples.txt
+3. **Performance testing** for audio components
+4. **Integration testing** for language features
+
+Key test files to reference:
+- sapf-examples.txt (comprehensive examples)
+- sapf-bif-examples.txt (built-in function examples)  
+- unit-tests.txt (unit test specifications)
+
+## COMPATIBILITY REQUIREMENTS
+
+1. **Language Semantics**: SAPF scripts must work identically
+2. **Numeric Precision**: Audio processing must maintain quality
+3. **Performance**: Real-time audio performance is critical
+4. **Memory Safety**: Rust's safety without compromising performance
+
+## BUILD AND DEVELOPMENT
+
+Current Cargo.toml is configured with necessary dependencies:
+- Audio: cpal, hound, rubato
+- DSP: rustfft, num-complex
+- Parsing: nom
+- UI (optional): egui, eframe
+- Math: num-traits
+- Error handling: thiserror, anyhow
+
+## DEBUGGING RESOURCES
+
+C++ source files are in:
+- include/ (header files)
+- src/ (implementation files)
+
+Key documentation:
+- README.txt (language specification)
+- sapf-examples.txt (usage examples)
+- sapf-prelude.txt (standard library)
+
+The original C++ codebase is well-documented and can be compiled in Xcode
+on macOS for reference behavior testing.
+
+## SUCCESS CRITERIA
+
+The port is complete when:
+1. All examples in sapf-examples.txt work correctly
+2. Audio playback functions properly
+3. REPL provides equivalent functionality to C++ version
+4. Performance is suitable for real-time audio
+5. Memory usage is reasonable
+6. All tests pass
+
+Estimated effort: ~40-60 hours for full completion with proper testing.
