@@ -231,9 +231,9 @@ impl Value {
         match self {
             Value::Real(_) => Err(SapfError::WrongType),
             Value::Object(obj) => {
-                if let Ok(function) = obj.as_any().downcast_ref::<crate::core::function::Function>() {
+                if let Some(function) = obj.as_any().downcast_ref::<crate::core::function::Function>() {
                     function.apply(thread)
-                } else if let Ok(primitive) = obj.as_any().downcast_ref::<crate::core::function::Primitive>() {
+                } else if let Some(primitive) = obj.as_any().downcast_ref::<crate::core::function::Primitive>() {
                     primitive.apply(thread)
                 } else {
                     Err(SapfError::WrongType)

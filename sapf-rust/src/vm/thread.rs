@@ -503,6 +503,26 @@ impl Thread {
 
         Ok(())
     }
+    
+    /// Get a string representation of the current stack
+    pub fn print_stack(&self) -> String {
+        let mut result = String::new();
+        result.push('[');
+        
+        // Print values from stack base to top
+        let start = self.stack_base;
+        let end = self.stack.len();
+        
+        for (i, idx) in (start..end).enumerate() {
+            if i > 0 {
+                result.push(' ');
+            }
+            result.push_str(&format!("{}", self.stack[idx]));
+        }
+        
+        result.push(']');
+        result
+    }
 }
 
 impl Default for Thread {

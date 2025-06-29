@@ -89,6 +89,10 @@ impl Object for Ref {
     fn clone_object(&self) -> std::sync::Arc<dyn Object> {
         std::sync::Arc::new(self.clone())
     }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 impl Clone for Ref {
@@ -193,6 +197,10 @@ impl Object for ZRef {
     
     fn clone_object(&self) -> std::sync::Arc<dyn Object> {
         std::sync::Arc::new(self.clone())
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

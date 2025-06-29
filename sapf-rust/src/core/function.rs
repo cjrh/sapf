@@ -91,6 +91,10 @@ impl Object for FunctionDef {
     fn clone_object(&self) -> Arc<dyn Object> {
         Arc::new(self.clone())
     }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -235,6 +239,10 @@ impl Object for Function {
     fn clone_object(&self) -> Arc<dyn Object> {
         Arc::new(self.clone())
     }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -326,6 +334,10 @@ impl Object for Primitive {
 
     fn clone_object(&self) -> Arc<dyn Object> {
         Arc::new(self.clone())
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

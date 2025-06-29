@@ -372,6 +372,10 @@ impl Object for Form {
     fn is_zero(&self) -> bool {
         self.table.is_empty() && self.parent.is_none()
     }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 impl std::fmt::Display for Form {
@@ -508,6 +512,10 @@ impl Object for GForm {
     
     fn is_zero(&self) -> bool {
         self.table.is_empty() && self.parent.is_none()
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

@@ -244,6 +244,10 @@ impl Object for Array {
     fn clone_object(&self) -> Arc<dyn Object> {
         Arc::new(self.clone())
     }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 impl Clone for Array {
@@ -502,6 +506,10 @@ impl Object for List {
     
     fn clone_object(&self) -> Arc<dyn Object> {
         Arc::new(self.clone())
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

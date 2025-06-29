@@ -219,7 +219,7 @@ pub fn if_op(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfErro
 }
 
 /// Comparison operation: equals
-pub fn equals(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
+pub fn equals(_thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
     if args.len() != 2 {
         return Err(SapfError::WrongArgumentCount { 
             expected: 2, 
@@ -232,7 +232,7 @@ pub fn equals(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfErr
 }
 
 /// Comparison operation: less than
-pub fn less(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
+pub fn less(_thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
     if args.len() != 2 {
         return Err(SapfError::WrongArgumentCount { 
             expected: 2, 
@@ -240,12 +240,13 @@ pub fn less(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError
         });
     }
     
-    let result = args[0].compare(&args[1])? < 0;
+    use std::cmp::Ordering;
+    let result = matches!(args[0].compare(&args[1])?, Ordering::Less);
     Ok(vec![Value::Real(if result { 1.0 } else { 0.0 })])
 }
 
 /// Comparison operation: greater than  
-pub fn greater(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
+pub fn greater(_thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
     if args.len() != 2 {
         return Err(SapfError::WrongArgumentCount { 
             expected: 2, 
@@ -253,12 +254,13 @@ pub fn greater(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfEr
         });
     }
     
-    let result = args[0].compare(&args[1])? > 0;
+    use std::cmp::Ordering;
+    let result = matches!(args[0].compare(&args[1])?, Ordering::Greater);
     Ok(vec![Value::Real(if result { 1.0 } else { 0.0 })])
 }
 
 /// Logical operation: not
-pub fn not_op(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
+pub fn not_op(_thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
     if args.len() != 1 {
         return Err(SapfError::WrongArgumentCount { 
             expected: 1, 
@@ -289,7 +291,7 @@ pub fn apply(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfErro
 }
 
 /// Print operation: print value
-pub fn pr(thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
+pub fn pr(_thread: &mut Thread, args: &[Value]) -> Result<Vec<Value>, SapfError> {
     if args.len() != 1 {
         return Err(SapfError::WrongArgumentCount { 
             expected: 1, 
