@@ -5,5 +5,7 @@
 //! audio processing components.
 
 pub mod ugen;
+pub mod oscillators;
 
 pub use ugen::*;
+pub use oscillators::*;
