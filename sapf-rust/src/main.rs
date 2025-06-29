@@ -3,6 +3,7 @@
 //! A functional stack-based language for sound synthesis and processing.
 
 mod core;
+mod vm;
 
 use anyhow::Result;
 

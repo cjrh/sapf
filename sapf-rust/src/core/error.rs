@@ -62,6 +62,10 @@ pub enum SapfError {
     /// User requested quit
     #[error("user quit")]
     UserQuit,
+    
+    /// Wrong type with context information
+    #[error("Wrong type in {0}: expected {1}")]
+    WrongTypeWithContext(String, String),
 }
 
 /// Result type alias for SAPF operations
@@ -85,6 +89,7 @@ impl SapfError {
             SapfError::InconsistentInheritance => -1011,
             SapfError::UndefinedOperation => -1012,
             SapfError::UserQuit => -1013,
+            SapfError::WrongTypeWithContext(_, _) => -1014,
         }
     }
     

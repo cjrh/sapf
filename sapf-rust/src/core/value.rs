@@ -177,6 +177,20 @@ impl From<bool> for Value {
     }
 }
 
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Real(a), Value::Real(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => {
+                // For objects, we compare their string representations
+                // This is a simplification - ideally we'd have proper equality
+                format!("{}", a) == format!("{}", b)
+            }
+            _ => false,
+        }
+    }
+}
+
 /// Helper trait for types that can be converted to Value
 pub trait IntoValue {
     fn into_value(self) -> Value;
@@ -188,15 +202,48 @@ impl<T: Into<Value>> IntoValue for T {
     }
 }
 
-/// Basic String object implementation for testing
-#[derive(Debug, Clone)]
+/// String object implementation
+#[derive(Debug, Clone, PartialEq)]
 pub struct StringObject {
     value: String,
+    hash: i32,
 }
 
 impl StringObject {
     pub fn new(s: String) -> Self {
-        StringObject { value: s }
+        let hash = crate::core::hash::hash_str(&s);
+        StringObject { value: s, hash }
+    }
+    
+    pub fn from_str(s: &str) -> Self {
+        Self::new(s.to_string())
+    }
+    
+    pub fn as_str(&self) -> &str {
+        &self.value
+    }
+    
+    pub fn len(&self) -> usize {
+        self.value.len()
+    }
+    
+    pub fn is_empty(&self) -> bool {
+        self.value.is_empty()
+    }
+    
+    pub fn hash(&self) -> i32 {
+        self.hash
+    }
+    
+    /// Concatenate with another string
+    pub fn concat(&self, other: &str) -> StringObject {
+        let new_value = format!("{}{}", self.value, other);
+        StringObject::new(new_value)
+    }
+    
+    /// Compare with another string
+    pub fn compare(&self, other: &StringObject) -> std::cmp::Ordering {
+        self.value.cmp(&other.value)
     }
 }
 
@@ -216,11 +263,35 @@ impl Object for StringObject {
     fn clone_object(&self) -> Rc<dyn Object> {
         Rc::new(self.clone())
     }
+    
+    fn is_zero(&self) -> bool {
+        self.value.is_empty()
+    }
 }
 
 impl fmt::Display for StringObject {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "\"{}\"", self.value)
+    }
+}
+
+impl Eq for StringObject {}
+
+impl std::hash::Hash for StringObject {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.hash.hash(state);
+    }
+}
+
+impl From<String> for Value {
+    fn from(s: String) -> Self {
+        Value::object(StringObject::new(s))
+    }
+}
+
+impl From<&str> for Value {
+    fn from(s: &str) -> Self {
+        Value::object(StringObject::from_str(s))
     }
 }
 
@@ -260,7 +331,7 @@ mod tests {
     
     #[test]
     fn test_string_object() {
-        let str_obj = StringObject::new("42.5".to_string());
+        let str_obj = StringObject::from_str("42.5");
         let v = Value::object(str_obj);
         
         assert!(v.is_object());
@@ -278,7 +349,7 @@ mod tests {
         let small_val = format!("{}", Value::real(1e-10));
         assert!(small_val == "1e-10" || small_val == "0.0000000001");
         
-        let str_obj = StringObject::new("hello".to_string());
+        let str_obj = StringObject::from_str("hello");
         let v = Value::object(str_obj);
         assert_eq!(format!("{}", v), "\"hello\"");
     }
@@ -289,7 +360,7 @@ mod tests {
         assert!(Value::real(1.0).is_truthy());
         assert!(Value::real(-1.0).is_truthy());
         
-        let str_obj = StringObject::new("hello".to_string());
+        let str_obj = StringObject::from_str("hello");
         let v = Value::object(str_obj);
         assert!(v.is_truthy()); // Non-zero string object is truthy
     }
@@ -300,7 +371,7 @@ mod tests {
         let deref_v = v.deref().unwrap();
         assert_eq!(deref_v.as_float().unwrap(), 42.0);
         
-        let str_obj = StringObject::new("hello".to_string());
+        let str_obj = StringObject::from_str("hello");
         let v = Value::object(str_obj);
         let deref_v = v.deref().unwrap();
         assert!(deref_v.is_object());
@@ -311,8 +382,59 @@ mod tests {
         let v = Value::real(42.0);
         assert!(matches!(v.as_object(), Err(SapfError::WrongType)));
         
-        let bad_str = StringObject::new("not_a_number".to_string());
+        let bad_str = StringObject::from_str("not_a_number");
         let v = Value::object(bad_str);
         assert!(matches!(v.as_float(), Err(SapfError::WrongType)));
+    }
+    
+    #[test]
+    fn test_string_operations() {
+        let s1 = StringObject::from_str("hello");
+        let s2 = StringObject::from_str("world");
+        let s3 = StringObject::from_str("hello");
+        
+        // Test equality
+        assert_eq!(s1, s3);
+        assert_ne!(s1, s2);
+        
+        // Test hash consistency
+        assert_eq!(s1.hash(), s3.hash());
+        
+        // Test concatenation
+        let concat = s1.concat(" world");
+        assert_eq!(concat.as_str(), "hello world");
+        
+        // Test comparison
+        assert_eq!(s1.compare(&s2), std::cmp::Ordering::Less);
+        assert_eq!(s2.compare(&s1), std::cmp::Ordering::Greater);
+        assert_eq!(s1.compare(&s3), std::cmp::Ordering::Equal);
+    }
+    
+    #[test]
+    fn test_string_zero() {
+        let empty = StringObject::from_str("");
+        let nonempty = StringObject::from_str("hello");
+        
+        assert!(empty.is_zero());
+        assert!(!nonempty.is_zero());
+        
+        let empty_val = Value::object(empty);
+        let nonempty_val = Value::object(nonempty);
+        
+        assert!(empty_val.is_zero());
+        assert!(!nonempty_val.is_zero());
+    }
+    
+    #[test]
+    fn test_string_conversions() {
+        // Test From implementations
+        let v1: Value = "hello".into();
+        let v2: Value = "world".to_string().into();
+        
+        assert!(v1.is_object());
+        assert!(v2.is_object());
+        
+        assert_eq!(v1.type_name(), "String");
+        assert_eq!(v2.type_name(), "String");
     }
 }
