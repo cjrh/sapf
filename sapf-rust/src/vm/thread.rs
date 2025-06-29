@@ -5,6 +5,7 @@
 //! data stack and a local variable stack for function calls.
 
 use std::rc::Rc;
+use std::sync::Arc;
 use crate::core::value::{Value, Object};
 use crate::core::error::{SapfError, Result};
 use crate::core::form::GForm;
@@ -176,9 +177,9 @@ impl Thread {
     }
     
     /// Pop a value as an object
-    pub fn pop_object(&mut self, context: &str) -> Result<Rc<dyn Object>> {
+    pub fn pop_object(&mut self, context: &str) -> Result<Arc<dyn Object>> {
         let val = self.pop()?;
-        val.as_object().map(|obj| obj.clone()).map_err(|_| {
+        val.as_object().map(|obj| Arc::clone(obj)).map_err(|_| {
             SapfError::WrongTypeWithContext(context.to_string(), val.type_name().to_string())
         })
     }

@@ -4,7 +4,7 @@
 //! Lists can be either Value lists (VList) or numeric lists (ZList) and support lazy evaluation
 //! through generators.
 
-use std::rc::Rc;
+use std::sync::Arc;
 use std::fmt;
 use crate::core::error::{SapfError, Result};
 use crate::core::value::{Value, Object};
@@ -241,8 +241,8 @@ impl Object for Array {
         "Array"
     }
     
-    fn clone_object(&self) -> Rc<dyn Object> {
-        Rc::new(self.clone())
+    fn clone_object(&self) -> Arc<dyn Object> {
+        Arc::new(self.clone())
     }
 }
 
@@ -255,6 +255,11 @@ impl Clone for Array {
         }
     }
 }
+
+// Safety: Array is Send + Sync because Vec<Value> and Vec<f64> are Send + Sync
+// and Value is Send + Sync (when Object: Send + Sync)
+unsafe impl Send for Array {}
+unsafe impl Sync for Array {}
 
 impl fmt::Display for Array {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -276,7 +281,7 @@ impl fmt::Display for Array {
 /// Generator trait for lazy list evaluation
 /// 
 /// This corresponds to the Gen class in the C++ implementation.
-pub trait Generator: fmt::Debug + fmt::Display {
+pub trait Generator: fmt::Debug + fmt::Display + Send + Sync {
     /// Generate values into the target list
     fn pull(&mut self, target: &mut List) -> Result<()>;
     
@@ -297,9 +302,9 @@ pub trait Generator: fmt::Debug + fmt::Display {
 #[derive(Debug)]
 pub struct List {
     element_type: ElementType,
-    array: Option<Rc<Array>>,           // Realized data
+    array: Option<Arc<Array>>,           // Realized data
     generator: Option<Box<dyn Generator>>, // Lazy generator
-    next: Option<Rc<List>>,             // Linked next list
+    next: Option<Arc<List>>,             // Linked next list
 }
 
 impl List {
@@ -318,7 +323,7 @@ impl List {
         let array = Array::new(element_type, capacity);
         List {
             element_type,
-            array: Some(Rc::new(array)),
+            array: Some(Arc::new(array)),
             generator: None,
             next: None,
         }
@@ -329,7 +334,7 @@ impl List {
         let element_type = array.element_type();
         List {
             element_type,
-            array: Some(Rc::new(array)),
+            array: Some(Arc::new(array)),
             generator: None,
             next: None,
         }
@@ -347,11 +352,11 @@ impl List {
     }
     
     /// Create a list with a next pointer
-    pub fn with_next(array: Array, next: Rc<List>) -> Self {
+    pub fn with_next(array: Array, next: Arc<List>) -> Self {
         let element_type = array.element_type();
         List {
             element_type,
-            array: Some(Rc::new(array)),
+            array: Some(Arc::new(array)),
             generator: None,
             next: Some(next),
         }
@@ -396,12 +401,12 @@ impl List {
     }
     
     /// Get the array if available
-    pub fn array(&self) -> Option<&Rc<Array>> {
+    pub fn array(&self) -> Option<&Arc<Array>> {
         self.array.as_ref()
     }
     
     /// Get the next list if available
-    pub fn next(&self) -> Option<&Rc<List>> {
+    pub fn next(&self) -> Option<&Arc<List>> {
         self.next.as_ref()
     }
     
@@ -457,12 +462,12 @@ impl List {
     }
     
     /// Set next list
-    pub fn set_next(&mut self, next: Rc<List>) {
+    pub fn set_next(&mut self, next: Arc<List>) {
         self.next = Some(next);
     }
     
     /// Link another list to the end of this chain
-    pub fn link(&mut self, other: Rc<List>) {
+    pub fn link(&mut self, other: Arc<List>) {
         if self.next.is_some() {
             // This would require mutable access through Rc, which is complex
             // For now, we'll implement a simpler version
@@ -495,8 +500,8 @@ impl Object for List {
         }
     }
     
-    fn clone_object(&self) -> Rc<dyn Object> {
-        Rc::new(self.clone())
+    fn clone_object(&self) -> Arc<dyn Object> {
+        Arc::new(self.clone())
     }
 }
 
@@ -510,6 +515,13 @@ impl Clone for List {
         }
     }
 }
+
+// Safety: List is Send + Sync because:
+// - Arc<Array> is Send + Sync when Array: Send + Sync
+// - Box<dyn Generator> is Send + Sync when Generator: Send + Sync
+// - Arc<List> is Send + Sync when List: Send + Sync
+unsafe impl Send for List {}
+unsafe impl Sync for List {}
 
 impl fmt::Display for List {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -600,7 +612,7 @@ mod tests {
         let arr1 = Array::from_values(vec![Value::real(1.0), Value::real(2.0)]);
         let arr2 = Array::from_values(vec![Value::real(3.0), Value::real(4.0)]);
         
-        let list2 = Rc::new(List::from_array(arr2));
+        let list2 = Arc::new(List::from_array(arr2));
         let list1 = List::with_next(arr1, list2);
         
         assert!(!list1.is_packed());

@@ -6,10 +6,15 @@ mod core;
 mod vm;
 
 use anyhow::Result;
+use vm::VM;
 
 fn main() -> Result<()> {
     println!("SAPF - Sound As Pure Form");
     println!("Rust implementation (work in progress)");
+    
+    // Initialize the VM
+    let vm = VM::instance();
+    println!("VM initialized with sample rate: {}", vm.audio_rate().sample_rate);
     
     // TODO: Implement REPL, command line parsing, etc.
     

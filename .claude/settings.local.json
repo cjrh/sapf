@@ -12,7 +12,8 @@
       "Bash(RUST_BACKTRACE=1 cargo test --manifest-path /home/caleb/Documents/repos/sapf/sapf-rust/Cargo.toml core::symbol)",
       "mcp__ht-mcp__ht_create_session",
       "mcp__ht-mcp__ht_execute_command",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__ht-mcp__ht_send_keys"
     ],
     "deny": []
   }

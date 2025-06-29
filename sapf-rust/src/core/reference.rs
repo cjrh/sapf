@@ -86,8 +86,8 @@ impl Object for Ref {
         "Ref"
     }
     
-    fn clone_object(&self) -> std::rc::Rc<dyn Object> {
-        std::rc::Rc::new(self.clone())
+    fn clone_object(&self) -> std::sync::Arc<dyn Object> {
+        std::sync::Arc::new(self.clone())
     }
 }
 
@@ -191,8 +191,8 @@ impl Object for ZRef {
         "ZRef"
     }
     
-    fn clone_object(&self) -> std::rc::Rc<dyn Object> {
-        std::rc::Rc::new(self.clone())
+    fn clone_object(&self) -> std::sync::Arc<dyn Object> {
+        std::sync::Arc::new(self.clone())
     }
 }
 

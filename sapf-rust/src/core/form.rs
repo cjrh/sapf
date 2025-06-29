@@ -6,7 +6,6 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
-use std::rc::Rc;
 use crate::core::value::{Value, Object};
 use crate::core::error::{SapfError, Result};
 use crate::core::hash::hash_str;
@@ -243,7 +242,7 @@ pub struct Form {
     /// The key-value table for this form level
     table: Table,
     /// The parent form in the inheritance chain
-    parent: Option<Rc<Form>>,
+    parent: Option<Arc<Form>>,
 }
 
 impl Form {
@@ -264,7 +263,7 @@ impl Form {
     }
     
     /// Create a form with a parent
-    pub fn with_parent(table: Table, parent: Rc<Form>) -> Self {
+    pub fn with_parent(table: Table, parent: Arc<Form>) -> Self {
         Form {
             table,
             parent: Some(parent),
@@ -311,7 +310,7 @@ impl Form {
     }
     
     /// Get the parent form
-    pub fn parent(&self) -> Option<&Rc<Form>> {
+    pub fn parent(&self) -> Option<&Arc<Form>> {
         self.parent.as_ref()
     }
     
@@ -362,8 +361,8 @@ impl Object for Form {
         "Form"
     }
     
-    fn clone_object(&self) -> Rc<dyn Object> {
-        Rc::new(self.clone())
+    fn clone_object(&self) -> Arc<dyn Object> {
+        Arc::new(self.clone())
     }
     
     fn is_zero(&self) -> bool {
@@ -499,8 +498,8 @@ impl Object for GForm {
         "GForm"
     }
     
-    fn clone_object(&self) -> Rc<dyn Object> {
-        Rc::new(self.clone())
+    fn clone_object(&self) -> Arc<dyn Object> {
+        Arc::new(self.clone())
     }
     
     fn is_zero(&self) -> bool {
@@ -520,9 +519,9 @@ impl std::fmt::Display for GForm {
 
 /// Multiple inheritance support - linearize inheritance from multiple parents
 /// This corresponds to the linearizeInheritance function in the C++ implementation
-pub fn linearize_inheritance(parents: Vec<Rc<Form>>) -> Rc<Form> {
+pub fn linearize_inheritance(parents: Vec<Arc<Form>>) -> Arc<Form> {
     if parents.is_empty() {
-        return Rc::new(Form::new());
+        return Arc::new(Form::new());
     }
     
     if parents.len() == 1 {
@@ -531,10 +530,10 @@ pub fn linearize_inheritance(parents: Vec<Rc<Form>>) -> Rc<Form> {
     
     // For now, implement simple left-to-right linearization
     // A full implementation would use C3 linearization like Dylan
-    let mut result = parents[0].clone();
+    let mut result = Arc::clone(&parents[0]);
     
     for parent in parents.iter().skip(1) {
-        result = merge_forms(result, parent.clone());
+        result = merge_forms(result, Arc::clone(parent));
     }
     
     result
@@ -542,7 +541,7 @@ pub fn linearize_inheritance(parents: Vec<Rc<Form>>) -> Rc<Form> {
 
 /// Merge two forms using simple precedence rules
 /// This is a simplified version of the merge algorithm in the C++ code
-fn merge_forms(left: Rc<Form>, right: Rc<Form>) -> Rc<Form> {
+fn merge_forms(left: Arc<Form>, right: Arc<Form>) -> Arc<Form> {
     // Create a new form that inherits from both
     // For simplicity, we'll just use left as primary and right as secondary
     let mut merged_table = left.table().clone();
@@ -554,7 +553,7 @@ fn merge_forms(left: Rc<Form>, right: Rc<Form>) -> Rc<Form> {
         }
     }
     
-    Rc::new(Form::from_table(merged_table))
+    Arc::new(Form::from_table(merged_table))
 }
 
 #[cfg(test)]
@@ -582,7 +581,7 @@ mod tests {
         let parent_table = Table::new()
             .put(Value::from("x"), Value::from(1.0))
             .put(Value::from("y"), Value::from(2.0));
-        let parent = Rc::new(Form::from_table(parent_table));
+        let parent = Arc::new(Form::from_table(parent_table));
         
         // Create child form
         let child_table = Table::new()
@@ -628,13 +627,13 @@ mod tests {
     
     #[test]
     fn test_linearize_inheritance() {
-        let form1 = Rc::new(Form::from_table(
+        let form1 = Arc::new(Form::from_table(
             Table::new().put(Value::from("a"), Value::from(1.0))
         ));
-        let form2 = Rc::new(Form::from_table(
+        let form2 = Arc::new(Form::from_table(
             Table::new().put(Value::from("b"), Value::from(2.0))
         ));
-        let form3 = Rc::new(Form::from_table(
+        let form3 = Arc::new(Form::from_table(
             Table::new().put(Value::from("c"), Value::from(3.0))
         ));
         

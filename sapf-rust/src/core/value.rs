@@ -4,12 +4,12 @@
 //! The Value type is a tagged union that can hold either a real number (f64) or a reference
 //! to an Object.
 
-use std::rc::Rc;
+use std::sync::Arc;
 use std::fmt;
 use crate::core::error::{SapfError, Result};
 
 /// Core trait for all SAPF objects
-pub trait Object: fmt::Debug + fmt::Display {
+pub trait Object: fmt::Debug + fmt::Display + Send + Sync {
     /// Convert the object to a floating-point number
     fn as_float(&self) -> Result<f64>;
     
@@ -30,7 +30,7 @@ pub trait Object: fmt::Debug + fmt::Display {
     }
     
     /// Clone this object
-    fn clone_object(&self) -> Rc<dyn Object>;
+    fn clone_object(&self) -> Arc<dyn Object>;
 }
 
 /// The central Value type in SAPF
@@ -42,7 +42,7 @@ pub enum Value {
     /// A real number value
     Real(f64),
     /// A reference to an object
-    Object(Rc<dyn Object>),
+    Object(Arc<dyn Object>),
 }
 
 impl Value {
@@ -53,11 +53,11 @@ impl Value {
     
     /// Create a new object value
     pub fn object<T: Object + 'static>(obj: T) -> Self {
-        Value::Object(Rc::new(obj))
+        Value::Object(Arc::new(obj))
     }
     
-    /// Create a new object value from Rc
-    pub fn from_object(obj: Rc<dyn Object>) -> Self {
+    /// Create a new object value from Arc
+    pub fn from_object(obj: Arc<dyn Object>) -> Self {
         Value::Object(obj)
     }
     
@@ -96,7 +96,7 @@ impl Value {
     }
     
     /// Get as object, returning error if it's a real number
-    pub fn as_object(&self) -> Result<&Rc<dyn Object>> {
+    pub fn as_object(&self) -> Result<&Arc<dyn Object>> {
         match self {
             Value::Real(_) => Err(SapfError::WrongType),
             Value::Object(obj) => Ok(obj),
@@ -146,6 +146,12 @@ impl From<f64> for Value {
         Value::Real(f)
     }
 }
+
+// Safety: Value is Send + Sync because:
+// - f64 is Send + Sync
+// - Arc<dyn Object> is Send + Sync when Object: Send + Sync
+unsafe impl Send for Value {}
+unsafe impl Sync for Value {}
 
 impl From<f32> for Value {
     fn from(f: f32) -> Self {
@@ -260,8 +266,8 @@ impl Object for StringObject {
         "String"
     }
     
-    fn clone_object(&self) -> Rc<dyn Object> {
-        Rc::new(self.clone())
+    fn clone_object(&self) -> Arc<dyn Object> {
+        Arc::new(self.clone())
     }
     
     fn is_zero(&self) -> bool {

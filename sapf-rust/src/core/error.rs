@@ -66,6 +66,14 @@ pub enum SapfError {
     /// Wrong type with context information
     #[error("Wrong type in {0}: expected {1}")]
     WrongTypeWithContext(String, String),
+    
+    /// Compilation error during parsing or code generation
+    #[error("Compilation error: {0}")]
+    CompileError(String),
+    
+    /// Invalid value provided
+    #[error("Invalid value: {0}")]
+    InvalidValue(String),
 }
 
 /// Result type alias for SAPF operations
@@ -90,6 +98,8 @@ impl SapfError {
             SapfError::UndefinedOperation => -1012,
             SapfError::UserQuit => -1013,
             SapfError::WrongTypeWithContext(_, _) => -1014,
+            SapfError::CompileError(_) => -1015,
+            SapfError::InvalidValue(_) => -1016,
         }
     }
     
