@@ -13,7 +13,12 @@
       "mcp__ht-mcp__ht_create_session",
       "mcp__ht-mcp__ht_execute_command",
       "Bash(find:*)",
-      "mcp__ht-mcp__ht_send_keys"
+      "mcp__ht-mcp__ht_send_keys",
+      "Bash(ls:*)",
+      "mcp__cargo__cargo_check",
+      "Bash(rustc:*)",
+      "Bash(./test_stack_underflow)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

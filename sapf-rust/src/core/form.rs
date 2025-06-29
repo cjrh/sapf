@@ -106,6 +106,10 @@ impl Table {
                 // Use the object's string representation for hashing
                 hash_str(&format!("{}", obj))
             }
+            Value::Nil => {
+                // Use a fixed hash for nil
+                0
+            }
         }
     }
     

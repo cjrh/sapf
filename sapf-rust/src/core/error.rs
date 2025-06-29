@@ -47,9 +47,9 @@ pub enum SapfError {
     #[error("stack overflow")]
     StackOverflow,
     
-    /// Stack underflow
+    /// Stack underflow (simple variant)
     #[error("stack underflow")]
-    StackUnderflow,
+    StackUnderflowSimple,
     
     /// Inconsistent inheritance in forms
     #[error("inconsistent inheritance")]
@@ -74,6 +74,35 @@ pub enum SapfError {
     /// Invalid value provided
     #[error("Invalid value: {0}")]
     InvalidValue(String),
+    
+    /// Stack underflow with detailed context
+    #[error("Stack underflow in {operation}: expected {expected}, got {actual}")]
+    StackUnderflow {
+        expected: usize,
+        actual: usize,
+        operation: String,
+    },
+    
+    /// Invalid type with detailed context
+    #[error("Invalid type in {operation}: expected {expected}, found {found}")]
+    InvalidType {
+        expected: String,
+        found: String,
+        operation: String,
+    },
+    
+    /// Invalid opcode in function execution
+    #[error("Invalid opcode {opcode} in {function}")]
+    InvalidOpcode {
+        opcode: u32,
+        function: String,
+    },
+    
+    /// Empty call stack error
+    #[error("Empty call stack in {operation}")]
+    EmptyCallStack {
+        operation: String,
+    },
 }
 
 /// Result type alias for SAPF operations
@@ -93,13 +122,17 @@ impl SapfError {
             SapfError::WrongState => -1007,
             SapfError::NotFound => -1008,
             SapfError::StackOverflow => -1009,
-            SapfError::StackUnderflow => -1010,
+            SapfError::StackUnderflowSimple => -1010,
             SapfError::InconsistentInheritance => -1011,
             SapfError::UndefinedOperation => -1012,
             SapfError::UserQuit => -1013,
             SapfError::WrongTypeWithContext(_, _) => -1014,
             SapfError::CompileError(_) => -1015,
             SapfError::InvalidValue(_) => -1016,
+            SapfError::StackUnderflow { .. } => -1017,
+            SapfError::InvalidType { .. } => -1018,
+            SapfError::InvalidOpcode { .. } => -1019,
+            SapfError::EmptyCallStack { .. } => -1020,
         }
     }
     
@@ -116,7 +149,7 @@ impl SapfError {
             -1007 => Some(SapfError::WrongState),
             -1008 => Some(SapfError::NotFound),
             -1009 => Some(SapfError::StackOverflow),
-            -1010 => Some(SapfError::StackUnderflow),
+            -1010 => Some(SapfError::StackUnderflowSimple),
             -1011 => Some(SapfError::InconsistentInheritance),
             -1012 => Some(SapfError::UndefinedOperation),
             -1013 => Some(SapfError::UserQuit),

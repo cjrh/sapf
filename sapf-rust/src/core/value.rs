@@ -29,6 +29,31 @@ pub trait Object: fmt::Debug + fmt::Display + Send + Sync {
         false // Most objects are not zero
     }
     
+    /// Check if this object is a function
+    fn is_function(&self) -> bool {
+        false
+    }
+    
+    /// Check if this object is a primitive function
+    fn is_primitive(&self) -> bool {
+        false
+    }
+    
+    /// Check if this object is a function definition
+    fn is_function_def(&self) -> bool {
+        false
+    }
+    
+    /// Check if this object is a function or primitive (callable)
+    fn is_function_or_primitive(&self) -> bool {
+        self.is_function() || self.is_primitive()
+    }
+    
+    /// Get help string for this object
+    fn help(&self) -> Option<&str> {
+        None
+    }
+    
     /// Clone this object
     fn clone_object(&self) -> Arc<dyn Object>;
 }
@@ -43,6 +68,8 @@ pub enum Value {
     Real(f64),
     /// A reference to an object
     Object(Arc<dyn Object>),
+    /// The nil/null value
+    Nil,
 }
 
 impl Value {
@@ -71,11 +98,17 @@ impl Value {
         matches!(self, Value::Object(_))
     }
     
+    /// Check if this value is nil
+    pub fn is_nil(&self) -> bool {
+        matches!(self, Value::Nil)
+    }
+    
     /// Check if this value is zero
     pub fn is_zero(&self) -> bool {
         match self {
             Value::Real(f) => *f == 0.0,
             Value::Object(obj) => obj.is_zero(),
+            Value::Nil => true, // nil is considered zero/falsy
         }
     }
     
@@ -84,6 +117,7 @@ impl Value {
         match self {
             Value::Real(f) => Ok(*f),
             Value::Object(obj) => obj.as_float(),
+            Value::Nil => Ok(0.0), // nil converts to 0
         }
     }
     
@@ -92,6 +126,7 @@ impl Value {
         match self {
             Value::Real(f) => Ok(f.round() as i64),
             Value::Object(obj) => obj.as_int(),
+            Value::Nil => Ok(0), // nil converts to 0
         }
     }
     
@@ -100,6 +135,7 @@ impl Value {
         match self {
             Value::Real(_) => Err(SapfError::WrongType),
             Value::Object(obj) => Ok(obj),
+            Value::Nil => Err(SapfError::WrongType),
         }
     }
     
@@ -108,6 +144,7 @@ impl Value {
         match self {
             Value::Real(_) => Ok(self.clone()),
             Value::Object(obj) => obj.deref(),
+            Value::Nil => Ok(self.clone()),
         }
     }
     
@@ -116,12 +153,49 @@ impl Value {
         match self {
             Value::Real(_) => "Real",
             Value::Object(obj) => obj.type_name(),
+            Value::Nil => "Nil",
         }
     }
     
     /// Convert to bool (for conditional operations)
     pub fn is_truthy(&self) -> bool {
         !self.is_zero()
+    }
+    
+    /// Check if this value is a function
+    pub fn is_function(&self) -> bool {
+        match self {
+            Value::Real(_) => false,
+            Value::Object(obj) => obj.is_function(),
+            Value::Nil => false,
+        }
+    }
+    
+    /// Check if this value is a primitive function
+    pub fn is_primitive(&self) -> bool {
+        match self {
+            Value::Real(_) => false,
+            Value::Object(obj) => obj.is_primitive(),
+            Value::Nil => false,
+        }
+    }
+    
+    /// Check if this value is a function definition
+    pub fn is_function_def(&self) -> bool {
+        match self {
+            Value::Real(_) => false,
+            Value::Object(obj) => obj.is_function_def(),
+            Value::Nil => false,
+        }
+    }
+    
+    /// Check if this value is callable (function or primitive)
+    pub fn is_callable(&self) -> bool {
+        match self {
+            Value::Real(_) => false,
+            Value::Object(obj) => obj.is_function_or_primitive(),
+            Value::Nil => false,
+        }
     }
 }
 
@@ -137,6 +211,7 @@ impl fmt::Display for Value {
                 }
             }
             Value::Object(obj) => write!(f, "{}", obj),
+            Value::Nil => write!(f, "nil"),
         }
     }
 }
@@ -192,6 +267,7 @@ impl PartialEq for Value {
                 // This is a simplification - ideally we'd have proper equality
                 format!("{}", a) == format!("{}", b)
             }
+            (Value::Nil, Value::Nil) => true,
             _ => false,
         }
     }

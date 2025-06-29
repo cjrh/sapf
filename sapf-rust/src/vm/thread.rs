@@ -9,6 +9,7 @@ use std::sync::Arc;
 use crate::core::value::{Value, Object};
 use crate::core::error::{SapfError, Result};
 use crate::core::form::GForm;
+use crate::core::function::Function;
 
 /// Stack size limit (though not actively enforced)
 const STACK_SIZE: usize = 16384;
@@ -34,6 +35,14 @@ impl Default for Rate {
 /// This corresponds to the Thread class in the C++ implementation.
 /// It provides stack-based computation with automatic type checking
 /// and error handling.
+#[derive(Debug, Clone)]
+pub struct FunctionContext {
+    pub prev_stack_base: usize,
+    pub prev_local_base: usize,
+    pub function: Option<Arc<Function>>,
+    pub name: Option<String>,
+}
+
 #[derive(Debug)]
 pub struct Thread {
     /// Main data stack for computation
@@ -45,6 +54,11 @@ pub struct Thread {
     local: Vec<Value>,
     /// Base index for current local frame
     local_base: usize,
+    
+    /// Call stack for function contexts
+    call_stack: Vec<FunctionContext>,
+    /// Current function being executed
+    current_function: Option<Arc<Function>>,
     
     /// Shared workspace for forms and variables
     workspace: Option<Rc<GForm>>,
@@ -61,6 +75,8 @@ impl Thread {
             stack_base: 0,
             local: Vec::with_capacity(256),
             local_base: 0,
+            call_stack: Vec::new(),
+            current_function: None,
             workspace: None,
             rate: Rate::default(),
         }
@@ -73,6 +89,8 @@ impl Thread {
             stack_base: 0,
             local: Vec::with_capacity(256),
             local_base: 0,
+            call_stack: Vec::new(),
+            current_function: None,
             workspace: None,
             rate,
         }
@@ -85,6 +103,8 @@ impl Thread {
             stack_base: 0,
             local: Vec::with_capacity(256),
             local_base: 0,
+            call_stack: Vec::new(),
+            current_function: None,
             workspace: Some(workspace),
             rate: Rate::default(),
         }
@@ -120,7 +140,11 @@ impl Thread {
     /// Pop a value from the stack
     pub fn pop(&mut self) -> Result<Value> {
         if self.stack_depth() == 0 {
-            return Err(SapfError::StackUnderflow);
+            return Err(SapfError::StackUnderflow {
+                expected: 1,
+                actual: 0,
+                operation: "pop".to_string(),
+            });
         }
         Ok(self.stack.pop().unwrap())
     }
@@ -128,7 +152,11 @@ impl Thread {
     /// Pop n values from the stack
     pub fn pop_n(&mut self, n: usize) -> Result<()> {
         if self.stack_depth() < n {
-            return Err(SapfError::StackUnderflow);
+            return Err(SapfError::StackUnderflow {
+                expected: n,
+                actual: self.stack_depth(),
+                operation: "pop_n".to_string(),
+            });
         }
         for _ in 0..n {
             self.stack.pop();
@@ -139,7 +167,11 @@ impl Thread {
     /// Access the top of the stack without popping
     pub fn top(&self) -> Result<&Value> {
         if self.stack_depth() == 0 {
-            return Err(SapfError::StackUnderflow);
+            return Err(SapfError::StackUnderflow {
+                expected: 1,
+                actual: 0,
+                operation: "top".to_string(),
+            });
         }
         Ok(self.stack.last().unwrap())
     }
@@ -147,7 +179,11 @@ impl Thread {
     /// Access the top of the stack mutably without popping
     pub fn top_mut(&mut self) -> Result<&mut Value> {
         if self.stack_depth() == 0 {
-            return Err(SapfError::StackUnderflow);
+            return Err(SapfError::StackUnderflow {
+                expected: 1,
+                actual: 0,
+                operation: "top_mut".to_string(),
+            });
         }
         Ok(self.stack.last_mut().unwrap())
     }
@@ -189,7 +225,11 @@ impl Thread {
     /// Insert a value n positions down from the top (tuck operation)
     pub fn tuck(&mut self, n: usize, value: Value) -> Result<()> {
         if self.stack_depth() < n {
-            return Err(SapfError::StackUnderflow);
+            return Err(SapfError::StackUnderflow {
+                expected: n,
+                actual: self.stack_depth(),
+                operation: "tuck".to_string(),
+            });
         }
         
         // Add space at the top
@@ -339,7 +379,11 @@ impl Thread {
     /// Peek at stack value n positions from top (0 = top)
     pub fn peek(&self, n: usize) -> Result<&Value> {
         if n >= self.stack_depth() {
-            return Err(SapfError::StackUnderflow);
+            return Err(SapfError::StackUnderflow {
+                expected: n + 1,
+                actual: self.stack_depth(),
+                operation: "peek".to_string(),
+            });
         }
         let index = self.stack.len() - 1 - n;
         Ok(&self.stack[index])
@@ -348,10 +392,116 @@ impl Thread {
     /// Peek at stack value mutably n positions from top (0 = top)
     pub fn peek_mut(&mut self, n: usize) -> Result<&mut Value> {
         if n >= self.stack_depth() {
-            return Err(SapfError::StackUnderflow);
+            return Err(SapfError::StackUnderflow {
+                expected: n + 1,
+                actual: self.stack_depth(),
+                operation: "peek_mut".to_string(),
+            });
         }
         let index = self.stack.len() - 1 - n;
         Ok(&mut self.stack[index])
+    }
+
+    // === Function Context Management ===
+
+    /// Push a function context onto the call stack
+    pub fn push_function_context(&mut self, function: &Function) -> Result<()> {
+        let context = FunctionContext {
+            prev_stack_base: self.stack_base,
+            prev_local_base: self.local_base,
+            function: self.current_function.clone(),
+            name: None, // Could be added later for debugging
+        };
+
+        self.call_stack.push(context);
+        self.current_function = Some(Arc::new(function.clone()));
+
+        // Set new local base for function call
+        self.set_local_base();
+
+        Ok(())
+    }
+
+    /// Pop the current function context and restore previous state
+    pub fn pop_function_context(&mut self) -> Result<FunctionContext> {
+        let context = self.call_stack.pop()
+            .ok_or_else(|| SapfError::EmptyCallStack {
+                operation: "pop_function_context".to_string(),
+            })?;
+
+        // Restore previous state
+        self.stack_base = context.prev_stack_base;
+        self.local_base = context.prev_local_base;
+        self.current_function = context.function.clone();
+
+        // Clean up locals from this function call
+        self.local.truncate(self.local_base);
+
+        Ok(context)
+    }
+
+    /// Get the current function being executed
+    pub fn get_current_function(&self) -> Option<Arc<Function>> {
+        self.current_function.clone()
+    }
+
+    /// Get the call stack depth
+    pub fn call_depth(&self) -> usize {
+        self.call_stack.len()
+    }
+
+    /// Get the stack base position
+    pub fn get_stack_base(&self) -> usize {
+        self.stack_base
+    }
+
+    /// Get the local base position
+    pub fn get_local_base(&self) -> usize {
+        self.local_base
+    }
+
+    /// Setup function parameters from stack arguments
+    pub fn setup_function_params(&mut self, param_count: usize) -> Result<()> {
+        if self.stack_depth() < param_count {
+            return Err(SapfError::StackUnderflow {
+                expected: param_count,
+                actual: self.stack_depth(),
+                operation: "setup_function_params".to_string(),
+            });
+        }
+
+        // Move parameters from stack to locals
+        let mut params = Vec::with_capacity(param_count);
+        for _ in 0..param_count {
+            params.push(self.pop()?);
+        }
+
+        // Reverse the order since we popped in reverse
+        params.reverse();
+
+        // Push as locals
+        for param in params {
+            self.push_local(param);
+        }
+
+        Ok(())
+    }
+
+    /// Prepare return values for the caller
+    pub fn prepare_return_values(&mut self, return_count: usize) -> Result<()> {
+        // For now, we'll assume return values are already on the stack
+        // In a more sophisticated implementation, we might need to move
+        // values from locals to the stack position expected by the caller
+        
+        if self.stack_depth() < return_count {
+            return Err(SapfError::StackUnderflow {
+                expected: return_count,
+                actual: self.stack_depth(),
+                operation: "prepare_return_values".to_string(),
+            });
+        }
+
+        Ok(())
     }
 }
 
@@ -368,6 +518,8 @@ impl Clone for Thread {
             stack_base: self.stack_base,
             local: self.local.clone(),
             local_base: self.local_base,
+            call_stack: self.call_stack.clone(),
+            current_function: self.current_function.clone(),
             workspace: self.workspace.clone(),
             rate: self.rate.clone(),
         }
@@ -412,9 +564,9 @@ mod tests {
         let mut thread = Thread::new();
         
         // Test underflow detection
-        assert!(matches!(thread.pop(), Err(SapfError::StackUnderflow)));
-        assert!(matches!(thread.top(), Err(SapfError::StackUnderflow)));
-        assert!(matches!(thread.pop_n(1), Err(SapfError::StackUnderflow)));
+        assert!(matches!(thread.pop(), Err(SapfError::StackUnderflow { .. })));
+        assert!(matches!(thread.top(), Err(SapfError::StackUnderflow { .. })));
+        assert!(matches!(thread.pop_n(1), Err(SapfError::StackUnderflow { .. })));
     }
     
     #[test]
@@ -512,7 +664,7 @@ mod tests {
         assert_eq!(thread.peek(2).unwrap().as_float().unwrap(), 1.0); // bottom
         
         // Test out of bounds
-        assert!(matches!(thread.peek(3), Err(SapfError::StackUnderflow)));
+        assert!(matches!(thread.peek(3), Err(SapfError::StackUnderflow { .. })));
     }
     
     #[test]
