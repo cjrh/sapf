@@ -7,6 +7,7 @@ mod vm;
 mod parser;
 mod repl;
 mod dsp;
+mod audio;
 
 use anyhow::Result;
 use clap::{Arg, Command};

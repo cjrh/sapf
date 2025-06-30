@@ -255,13 +255,26 @@ from C++ to Rust.
 
 ## PHASE 7: I/O and Playback (MEDIUM PRIORITY)
 
-### 7.1 Audio Output
-- [ ] Convert Play.hpp/cpp to audio_output.rs
-  - [ ] Real-time audio playback using cpal
-  - [ ] Buffer management and latency control
-  - [ ] Multi-channel output routing
-  - [ ] Integration with VM's audio rate settings
+### 7.1 Audio Output ✅ (MOSTLY COMPLETED - NEEDS INTEGRATION)
+- ✅ Convert Play.hpp/cpp to audio_output.rs
+  - ✅ Real-time audio playback using cpal
+  - ✅ Buffer management and latency control
+  - ✅ Multi-channel output routing
+  - ✅ Integration with VM's audio rate settings
+  - ✅ AudioIn equivalent to C++ ZIn class for input handling
+  - ✅ AudioPlayer equivalent to C++ AUPlayer struct
+  - ✅ Audio built-in functions (play, stopall, audioinfo)
+  - [ ] **BLOCKED**: Thread safety integration with existing VM architecture
+  - Files implemented: src/audio/mod.rs, src/audio/input.rs, src/audio/output.rs, src/audio/audio_ops.rs
   - Files to reference: include/Play.hpp, src/Play.cpp
+  - **Implementation notes**:
+    - Used cpal for cross-platform audio I/O
+    - Created AudioManager singleton for managing multiple players
+    - Implemented real-time buffer filling with error handling
+    - AudioIn handles various input types (constants, lists, UGens)
+    - Multi-channel support up to 32 channels
+    - Configurable sample rates and buffer sizes
+    - Built-in functions registered with VM (temporarily disabled due to threading issues)
   - **Rust ecosystem**: cpal provides excellent cross-platform audio support
 
 ### 7.2 Sound File I/O

@@ -28,10 +28,9 @@ ecosystem; everything should be rust-native.
 UPDATE LOOP PROMPT
 ==================
 
-Let's continue porting this C++ project to Rust. The rust crate is in the `sapf-rust`
-directory. The current status of the port is in `sapf-rust/TODO.txt`. Some discrepancies
-have started to appear in the TODO.txt file, so please look out for that. Refer to that
-file for where to pick up with the porting work. Remember that the best way to work with
-the rust project is to use the ht-mcp server to create a terminal session, cd into
-sapf-rust, and run any commands there, like cargo commands. Let's focus on "8.2 Set
-Operations" in this session. 
+Let's continue porting this C++ project to Rust. 
+The rust crate is in the `sapf-rust` directory.
+The current status of the port is in `sapf-rust/TODO.txt`. 
+Refer to that file for where to pick up with the porting work.
+Update `sapf-rust/TODO.txt` when you make progress.
+Use the ht-mcp server to create a terminal session for running commands in the `sapf-rust` directory.
