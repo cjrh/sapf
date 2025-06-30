@@ -469,6 +469,10 @@ pub fn register_core_builtins(vm: &VM) -> Result<(), SapfError> {
         aa_prim, Value::Real(0.0), "aa", "Duplicate top stack item", 1, 2
     ))))?;
     
+    vm.def_by_name("dup", Value::from_object(Arc::new(Primitive::new(
+        aa_prim, Value::Real(0.0), "dup", "Duplicate top stack item", 1, 2
+    ))))?;
+    
     vm.def_by_name("aaa", Value::from_object(Arc::new(Primitive::new(
         aaa_prim, Value::Real(0.0), "aaa", "Duplicate top item twice", 1, 3
     ))))?;
@@ -755,6 +759,7 @@ mod tests {
         // Test that some functions are registered
         assert!(vm.lookup_by_name("clear").is_some());
         assert!(vm.lookup_by_name("aa").is_some());
+        assert!(vm.lookup_by_name("dup").is_some());
         assert!(vm.lookup_by_name("ba").is_some());
         assert!(vm.lookup_by_name("==").is_some());
         assert!(vm.lookup_by_name("pr").is_some());
@@ -782,6 +787,7 @@ mod tests {
         
         // Test that functions from both modules are available
         assert!(vm.lookup_by_name("clear").is_some());
+        assert!(vm.lookup_by_name("dup").is_some());
         assert!(vm.lookup_by_name("+").is_some());
         assert!(vm.lookup_by_name("sin").is_some());
         assert!(vm.lookup_by_name("prstk").is_some());

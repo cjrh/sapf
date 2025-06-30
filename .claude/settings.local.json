@@ -22,7 +22,9 @@
       "Bash(rg:*)",
       "mcp__ht-mcp__ht_close_session",
       "mcp__ht-mcp__ht_take_snapshot",
-      "mcp__cargo__cargo_build"
+      "mcp__cargo__cargo_build",
+      "Bash(RUST_BACKTRACE=1 cargo test builtins --manifest-path /home/caleb/Documents/repos/sapf/sapf-rust/Cargo.toml)",
+      "Bash(RUST_BACKTRACE=1 cargo check --manifest-path /home/caleb/Documents/repos/sapf/sapf-rust/Cargo.toml)"
     ],
     "deny": []
   }
