@@ -23,6 +23,7 @@ pub trait Feedback {
 }
 
 /// Normal (no feedback processing)
+#[derive(Debug, Clone, Copy)]
 pub struct NormalFeedback;
 
 impl Feedback for NormalFeedback {
@@ -33,6 +34,7 @@ impl Feedback for NormalFeedback {
 }
 
 /// Tanh approximation feedback for saturation
+#[derive(Debug, Clone, Copy)]
 pub struct TanhFeedback;
 
 impl Feedback for TanhFeedback {
@@ -44,6 +46,7 @@ impl Feedback for TanhFeedback {
 }
 
 /// Hard clipping feedback between -1 and 1
+#[derive(Debug, Clone, Copy)]
 pub struct ClipFeedback;
 
 impl Feedback for ClipFeedback {
@@ -505,7 +508,7 @@ impl<F: Feedback> ResonantLowPassFilter<F> {
     }
 }
 
-impl<F: Feedback + 'static> Object for ResonantLowPassFilter<F> {
+impl<F: Feedback + Send + Sync + std::fmt::Debug + 'static> Object for ResonantLowPassFilter<F> {
     fn as_float(&self) -> Result<f64> {
         Ok(self.frequency)
     }
@@ -533,7 +536,7 @@ impl<F: Feedback> fmt::Display for ResonantLowPassFilter<F> {
     }
 }
 
-impl<F: Feedback + Send> UGen for ResonantLowPassFilter<F> {
+impl<F: Feedback + Send + Sync + std::fmt::Debug + 'static> UGen for ResonantLowPassFilter<F> {
     fn pull(&mut self, _thread: &mut Thread, output: &mut [Sample]) -> Result<usize> {
         let samples_to_fill = output.len().min(self.base.block_size());
         // For now, this is a self-contained filter - in full implementation
@@ -557,7 +560,7 @@ impl<F: Feedback + Send> UGen for ResonantLowPassFilter<F> {
     }
 }
 
-impl<F: Feedback + Send> OneInputGen for ResonantLowPassFilter<F> {
+impl<F: Feedback + Send + Sync + std::fmt::Debug + 'static> OneInputGen for ResonantLowPassFilter<F> {
     fn calc(&mut self, samples: usize, output: &mut [Sample], input: &[Sample]) {
         let (a0, a1, a2, b0, b1, b2) = self.calculate_coefficients(self.frequency, self.rq);
         
@@ -585,7 +588,7 @@ pub type RLPFTanh = ResonantLowPassFilter<TanhFeedback>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vm::VM;
+    use crate::vm::{VM, Thread};
     
     #[test]
     fn test_low_pass_filter_creation() {
@@ -621,8 +624,8 @@ mod tests {
     
     #[test]
     fn test_filter_processing() {
-        let vm = VM::new();
-        let mut thread = vm.create_thread().unwrap();
+        let _vm = VM::new();
+        let mut thread = Thread::new();
         
         let mut filter = LowPassFilter::new(1000.0, 44100.0);
         
