@@ -6,6 +6,8 @@
 
 pub mod ugen;
 pub mod oscillators;
+pub mod filters;
 
 pub use ugen::*;
 pub use oscillators::*;
+pub use filters::*;
