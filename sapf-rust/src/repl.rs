@@ -145,7 +145,7 @@ impl Repl {
             println!("Stack is empty");
         } else {
             println!("Stack (top to bottom):");
-            self.thread.print_stack();
+            println!("{}", self.thread.print_stack());
         }
     }
     

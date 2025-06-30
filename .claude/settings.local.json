@@ -21,7 +21,8 @@
       "Bash(rm:*)",
       "Bash(rg:*)",
       "mcp__ht-mcp__ht_close_session",
-      "mcp__ht-mcp__ht_take_snapshot"
+      "mcp__ht-mcp__ht_take_snapshot",
+      "mcp__cargo__cargo_build"
     ],
     "deny": []
   }
