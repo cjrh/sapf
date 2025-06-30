@@ -295,13 +295,27 @@ from C++ to Rust.
   - Files implemented: src/core/set_ops.rs (~780 lines)
   - **Architecture**: Efficient hash table with linear probing for good performance
 
-### 8.3 Random Operations
-- [ ] Convert RandomOps.cpp to random_ops.rs
-  - [ ] Random number generators (LCG, Mersenne Twister)
-  - [ ] Random distributions (uniform, gaussian, etc.)
-  - [ ] Seedable and reproducible randomness
-  - Files to reference: src/RandomOps.cpp
-  - **Rust advantage**: Use rand crate for high-quality RNG implementations
+### 8.3 Random Operations ✅ (COMPLETED)
+- ✅ Convert RandomOps.cpp to random_ops.rs
+  - ✅ Random number generator using xoroshiro128+ algorithm
+  - ✅ Seedable and reproducible randomness with hash-based initialization
+  - ✅ Random distributions implemented:
+    - ✅ Uniform distribution (rand, rand2, irand, irand2)
+    - ✅ Exponential distribution (xrand)
+    - ✅ Linear distribution (linrand, ilinrand)
+    - ✅ Triangular distribution (trirand, itrirand - implemented in RGen)
+  - ✅ Probability operations (coin toss with probability p)
+  - ✅ Weighted random selection (wrand for indices, wpick for elements)
+  - ✅ List operations (pick random element from list)
+  - ✅ VM builtin integration - all functions registered and callable
+  - ✅ Thread-safe RGen integrated into Thread struct
+  - ✅ Comprehensive test suite (12 test cases, all passing)
+  - Files implemented: src/core/random_ops.rs (~620 lines)
+  - **Implementation notes**:
+    - Used xoroshiro128+ for high-quality, fast random number generation
+    - Hash-based seeding ensures good distribution from arbitrary seeds
+    - All operations match C++ SAPF semantics exactly
+    - No external rand crate dependency - pure Rust implementation
 
 ### 8.4 Delay Effects
 - [ ] Convert DelayUGens.hpp/cpp to delays.rs
@@ -480,11 +494,12 @@ The port is complete when:
 ## CURRENT STATUS UPDATE (Latest Session)
 
 ### Progress Summary:
-- **Phase 6.3 completed**: Basic filters implementation is now fully functional
-- **Total progress**: 6.5 out of 11 phases complete (~59% done)
-- **Test status**: 174 tests passing (includes 8 new filter tests)
-- **REPL status**: Fully functional for core SAPF operations
+- **Phase 8.3 completed**: Random operations implementation is now fully functional
+- **Total progress**: 6.7 out of 11 phases complete (~61% done)
+- **Test status**: 186 tests passing (includes 12 new random operation tests)
+- **REPL status**: Fully functional for core SAPF operations + random operations
 - **Audio DSP status**: Core foundation complete (UGens, oscillators, filters)
+- **Random operations status**: 13 random functions now available (newseed, setseed, rand, coin, etc.)
 - **Build status**: Project compiles successfully with zero errors
 
 ### Critical Milestone Achieved:
@@ -492,21 +507,36 @@ The SAPF language is now **functionally complete** for basic programming and aud
 - Perform arithmetic: `5 3 + 2 *` → `16`
 - Manipulate stacks: `10 3 ba` (swap), `42 aa` (duplicate)
 - Execute complex expressions: `3 5 + 2 * 4 - aa +` → `24`
-- Access all 70+ built-in functions immediately
-- **NEW**: Create and process audio with filters (LPF, HPF, BPF, RLPF)
+- Access all 85+ built-in functions immediately (including 13 random operations)
+- Create and process audio with filters (LPF, HPF, BPF, RLPF)
+- **NEW**: Generate random numbers and probability distributions
+  - `12345 setseed` (set random seed)
+  - `0 1 rand` (random number between 0 and 1)
+  - `0.5 coin` (coin toss with 50% probability)
+  - `[1 2 3 4 5] pick` (pick random element from list)
+  - `[0.1 0.8 0.1] wrand` (weighted random selection)
 
-### Phase 6.3 Implementation Details:
-- **Basic Filters Complete**: Low-pass, high-pass, band-pass, and resonant filters
-- **DSP Architecture**: Biquad filter topology with proper coefficient calculations
-- **Filter Types Implemented**:
-  - LowPassFilter (12 dB/octave Butterworth)
-  - HighPassFilter (12 dB/octave Butterworth)
-  - BandPassFilter (with bandwidth control in octaves)
-  - ResonantLowPassFilter with configurable feedback (Normal, Clipping, Tanh)
-- **Processing Traits**: OneInputGen and TwoInputGen for modular audio processing
-- **Filter State Management**: Proper delay line variables (x1, x2, y1, y2)
-- **Integration**: Seamless integration with existing UGen infrastructure
-- **Performance**: Uses math::tsin/tcos lookup tables for coefficient calculation
+### Phase 8.3 Implementation Details:
+- **Random Number Generation**: High-quality xoroshiro128+ algorithm implementation
+- **Seeding System**: Hash-based initialization ensures good distribution from any seed
+- **Random Operations Implemented**:
+  - `newseed` - Generate new random seed from current state
+  - `setseed` - Set random seed for reproducible sequences
+  - `rand` - Uniform random number in range [a, b)
+  - `rand2` - Uniform random number in range [-a, +a)
+  - `coin` - Coin toss with specified probability p
+  - `irand` - Random integer in range [a, b]
+  - `irand2` - Random integer in range [-a, +a]
+  - `xrand` - Exponentially distributed random in range [a, b)
+  - `linrand` - Linearly distributed random (biased toward lower values)
+  - `ilinrand` - Linearly distributed random integer
+  - `pick` - Pick random element from list
+  - `wrand` - Weighted random index selection using probability weights
+  - `wpick` - Weighted random element selection from list
+- **Distribution Quality**: All distributions tested and match mathematical expectations
+- **Thread Integration**: RGen instance added to Thread struct for per-thread state
+- **VM Integration**: All functions registered and immediately usable in SAPF programs
+- **Performance**: Pure Rust implementation with no external dependencies
 
 ### Next Priority Tasks (Phase 7+):
 1. **Audio system integration** (~2-3 days):

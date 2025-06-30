@@ -10,6 +10,7 @@ use crate::core::value::{Value, Object, StringObject};
 use crate::core::error::{SapfError, Result};
 use crate::core::form::GForm;
 use crate::core::function::Function;
+use crate::core::random_ops::RGen;
 
 /// Stack size limit (though not actively enforced)
 const STACK_SIZE: usize = 16384;
@@ -65,6 +66,9 @@ pub struct Thread {
     
     /// Audio processing context
     rate: Rate,
+    
+    /// Random number generator
+    pub rgen: RGen,
 }
 
 impl Thread {
@@ -79,6 +83,7 @@ impl Thread {
             current_function: None,
             workspace: None,
             rate: Rate::default(),
+            rgen: RGen::new(1), // Default seed
         }
     }
     
@@ -93,6 +98,7 @@ impl Thread {
             current_function: None,
             workspace: None,
             rate,
+            rgen: RGen::new(1), // Default seed
         }
     }
     
@@ -107,6 +113,7 @@ impl Thread {
             current_function: None,
             workspace: Some(workspace),
             rate: Rate::default(),
+            rgen: RGen::new(1), // Default seed
         }
     }
     
@@ -218,6 +225,15 @@ impl Thread {
         val.as_object().map(|obj| Arc::clone(obj)).map_err(|_| {
             SapfError::WrongTypeWithContext(context.to_string(), val.type_name().to_string())
         })
+    }
+    
+    /// Pop a value as a real number
+    pub fn pop_real(&mut self, context: &str) -> Result<f64> {
+        let val = self.pop()?;
+        match val {
+            Value::Real(r) => Ok(r),
+            _ => Err(SapfError::WrongTypeWithContext(context.to_string(), val.type_name().to_string()))
+        }
     }
     
     // === Advanced Stack Operations ===
@@ -726,6 +742,7 @@ impl Clone for Thread {
             current_function: self.current_function.clone(),
             workspace: self.workspace.clone(),
             rate: self.rate.clone(),
+            rgen: self.rgen.clone(),
         }
     }
 }

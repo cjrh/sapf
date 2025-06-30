@@ -7,6 +7,7 @@ use crate::core::{SapfError, Value, Object};
 use crate::core::function::Primitive;
 use crate::core::math_ops::*;
 use crate::core::core_ops;
+use crate::core::random_ops;
 use crate::vm::{VM, Thread};
 use std::sync::Arc;
 
@@ -737,6 +738,7 @@ pub fn register_math_builtins(vm: &VM) -> Result<(), SapfError> {
 pub fn register_all_builtins(vm: &VM) -> Result<(), SapfError> {
     register_core_builtins(vm)?;
     register_math_builtins(vm)?;
+    random_ops::register_random_builtins(vm)?;
     Ok(())
 }
 
