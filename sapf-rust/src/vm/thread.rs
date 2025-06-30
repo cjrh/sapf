@@ -590,7 +590,7 @@ impl Thread {
                         match vm.lookup(&Value::Object(obj.clone())) {
                             Some(function_value) => {
                                 // Call the function
-                                if function_value.is_function() {
+                                if function_value.is_callable() {
                                     function_value.apply(self)?;
                                 } else {
                                     // Not a function - just push the value

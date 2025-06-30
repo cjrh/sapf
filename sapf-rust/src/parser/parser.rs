@@ -325,8 +325,23 @@ impl Parser {
             }
 
             ASTNode::Symbol(sym) => {
-                // Try to lookup symbol and push its value, or just push the symbol
-                thread.push(Value::Object(sym.clone()));
+                // Try to lookup symbol in VM builtins first
+                use crate::vm::vm::VM;
+                let vm = VM::instance();
+                
+                // Try to lookup symbol by string name
+                if let Some(builtin_value) = vm.lookup_by_name(sym.as_str()) {
+                    // If it's a callable function/primitive, execute it
+                    if builtin_value.is_callable() {
+                        builtin_value.apply(thread)?;
+                    } else {
+                        // Not callable - push the value
+                        thread.push(builtin_value);
+                    }
+                } else {
+                    // Symbol not found in builtins - push as literal symbol for late binding
+                    thread.push(Value::Object(sym.clone()));
+                }
                 Ok(())
             }
 

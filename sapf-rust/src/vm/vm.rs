@@ -11,6 +11,7 @@ use crate::core::form::{GTable, GForm, Form};
 use crate::core::list::List;
 use crate::core::symbol;
 use crate::vm::thread::{Thread, Rate};
+use crate::vm::builtins;
 
 /// Default audio constants
 pub const DEFAULT_SAMPLE_RATE: f64 = 96000.0;
@@ -76,7 +77,7 @@ impl VM {
         // Create empty environment
         let empty_env = Arc::new(Form::new());
         
-        VM {
+        let vm = VM {
             builtins: Arc::new(Mutex::new(GTable::new())),
             ar,
             kr,
@@ -89,7 +90,14 @@ impl VM {
             bif_help: Arc::new(Mutex::new(Vec::new())),
             udf_help: Arc::new(Mutex::new(Vec::new())),
             trace_on: false,
+        };
+        
+        // Register built-in functions
+        if let Err(e) = builtins::register_all_builtins(&vm) {
+            eprintln!("Warning: Failed to register built-in functions: {}", e);
         }
+        
+        vm
     }
     
     /// Get the global VM instance
