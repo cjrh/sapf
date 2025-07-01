@@ -62,7 +62,7 @@ pub struct Thread {
     current_function: Option<Arc<Function>>,
     
     /// Shared workspace for forms and variables
-    workspace: Option<Rc<GForm>>,
+    workspace: Option<Arc<GForm>>,
     
     /// Audio processing context
     rate: Rate,
@@ -103,7 +103,7 @@ impl Thread {
     }
     
     /// Create a thread with a workspace
-    pub fn with_workspace(workspace: Rc<GForm>) -> Self {
+    pub fn with_workspace(workspace: Arc<GForm>) -> Self {
         Thread {
             stack: Vec::with_capacity(STACK_SIZE),
             stack_base: 0,
@@ -349,12 +349,12 @@ impl Thread {
     // === Workspace Management ===
     
     /// Get the current workspace
-    pub fn workspace(&self) -> Option<&Rc<GForm>> {
+    pub fn workspace(&self) -> Option<&Arc<GForm>> {
         self.workspace.as_ref()
     }
     
     /// Set the workspace
-    pub fn set_workspace(&mut self, workspace: Option<Rc<GForm>>) {
+    pub fn set_workspace(&mut self, workspace: Option<Arc<GForm>>) {
         self.workspace = workspace;
     }
     
@@ -911,7 +911,7 @@ mod tests {
     
     #[test]
     fn test_workspace() {
-        let workspace = Rc::new(GForm::new());
+        let workspace = Arc::new(GForm::new());
         let mut thread = Thread::with_workspace(workspace.clone());
         
         assert!(thread.workspace().is_some());

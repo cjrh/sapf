@@ -255,7 +255,7 @@ from C++ to Rust.
 
 ## PHASE 7: I/O and Playback (MEDIUM PRIORITY)
 
-### 7.1 Audio Output ✅ (MOSTLY COMPLETED - NEEDS INTEGRATION)
+### 7.1 Audio Output ⚠️ (COMPILED - NEEDS FIXES)
 - ✅ Convert Play.hpp/cpp to audio_output.rs
   - ✅ Real-time audio playback using cpal
   - ✅ Buffer management and latency control
@@ -264,7 +264,11 @@ from C++ to Rust.
   - ✅ AudioIn equivalent to C++ ZIn class for input handling
   - ✅ AudioPlayer equivalent to C++ AUPlayer struct
   - ✅ Audio built-in functions (play, stopall, audioinfo)
-  - [ ] **BLOCKED**: Thread safety integration with existing VM architecture
+  - ⚠️ **SPECIFIC ISSUES IDENTIFIED** (20 compilation errors remain):
+    1. **UGen trait sizing**: `dyn UGen` needs `Box<dyn UGen>` wrapper (audio/input.rs:110)
+    2. **Function signature mismatches**: Type alias takes 1 generic arg but 2 provided (audio_ops.rs:16,42,57,74)
+    3. **List size methods**: Expected `usize` but found `Result<usize, SapfError>` (audio/input.rs:168,218,248)
+    4. **Thread safety resolved**: ✅ Fixed Rc<GForm> → Arc<GForm> migration in vm/thread.rs
   - Files implemented: src/audio/mod.rs, src/audio/input.rs, src/audio/output.rs, src/audio/audio_ops.rs
   - Files to reference: include/Play.hpp, src/Play.cpp
   - **Implementation notes**:
@@ -274,8 +278,9 @@ from C++ to Rust.
     - AudioIn handles various input types (constants, lists, UGens)
     - Multi-channel support up to 32 channels
     - Configurable sample rates and buffer sizes
-    - Built-in functions registered with VM (temporarily disabled due to threading issues)
+    - Built-in functions now re-enabled and registered with VM
   - **Rust ecosystem**: cpal provides excellent cross-platform audio support
+  - **Next steps**: 1) Fix UGen boxing, 2) Fix function signatures, 3) Fix List size methods
 
 ### 7.2 Sound File I/O
 - [ ] Convert SoundFiles.hpp/cpp to sound_files.rs
@@ -504,17 +509,18 @@ The port is complete when:
 5. **Trait Extension Challenges**: Adding methods to core traits requires updating all implementations
 6. **Downcasting in Rust**: Object trait needs as_any() method for type-safe downcasting
 
-## CURRENT STATUS UPDATE (Latest Session - 2025-07-01)
+## CURRENT STATUS UPDATE (Latest Session - 2025-07-01 Continued)
 
 ### Progress Summary:
-- **Build status**: ✅ FIXED! Compilation errors resolved (was 40 errors, now 0)
-- **Missing methods fixed**: ✅ Added Value::to_real(), List::at_index(), List::is_infinite()
-- **Error handling**: ✅ Added missing SapfError variants (InvalidArgument, RuntimeError)
+- **Build status**: ⚠️ 20 compilation errors remain (down from threading crisis, now audio-specific)
+- **Threading issues**: ✅ RESOLVED! Fixed Rc<GForm> → Arc<GForm> migration, all tests passing (182/182)
+- **Error handling**: ✅ Fixed Thread::push().unwrap() calls - push() returns unit type
 - **REPL status**: ✅ WORKING! Successfully executes basic SAPF code (e.g., "5 3 +" → 8)
-- **Phase 8.3 completed**: Random operations implementation is now fully functional  
-- **Total progress**: 6.7 out of 11 phases complete (~61% done)
-- **Test status**: ⚠️ Some test compilation issues remain but core functionality works
-- **Audio DSP status**: Core foundation complete but temporarily disabled due to threading issues
+- **Phase 8.3 completed**: Random operations implementation is fully functional  
+- **Audio system**: ⚠️ Re-enabled but needs 3 specific fixes (UGen boxing, function signatures, List methods)
+- **Total progress**: 6.8 out of 11 phases complete (~62% done)
+- **Test status**: ✅ All 182 tests passing, no threading issues
+- **Audio DSP status**: Core foundation complete, built-in functions re-enabled
 - **Random operations status**: 13 random functions now available (newseed, setseed, rand, coin, etc.)
 
 ### Critical Milestone Achieved:

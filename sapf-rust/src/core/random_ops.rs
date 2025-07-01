@@ -12,7 +12,7 @@
 use crate::core::error::SapfError;
 use crate::core::hash::hash_i64;
 use crate::core::value::{Value, Object};
-use crate::core::list::List;
+use crate::core::list::{List, Array};
 use crate::vm::thread::Thread;
 
 /// Type alias for floating-point numbers
@@ -512,7 +512,7 @@ mod tests {
     use crate::vm::vm::VM;
 
     fn setup_thread() -> Thread {
-        VM::initialize();
+        VM::init_for_test();
         Thread::new()
     }
 
@@ -602,7 +602,7 @@ mod tests {
             Value::Real(2.0),
             Value::Real(3.0),
         ];
-        let list = List::from_values(items.clone());
+        let list = List::from_array(Array::from_values(items.clone()));
         thread.push(Value::object(list));
         
         pick(&mut thread).unwrap();
@@ -622,17 +622,15 @@ mod tests {
             Value::Real(0.8),
             Value::Real(0.1),
         ];
-        let weights_list = List::from_values(weights);
+        let weights_list = List::from_array(Array::from_values(weights));
         thread.push(Value::object(weights_list));
         
         // Test multiple times to check distribution
         let mut results = Vec::new();
         for _ in 0..10 {
-            thread.push(Value::object(List::from_values(vec![
-                Value::Real(0.1),
-                Value::Real(0.8),
-                Value::Real(0.1),
-            ])));
+            let test_weights = vec![Value::Real(0.1), Value::Real(0.8), Value::Real(0.1)];
+            let test_list = List::from_array(Array::from_values(test_weights));
+            thread.push(Value::object(test_list));
             wrand(&mut thread).unwrap();
             if let Value::Real(idx) = thread.pop().unwrap() {
                 results.push(idx as usize);
@@ -656,8 +654,8 @@ mod tests {
         // Generate some numbers
         let mut results1 = Vec::new();
         for _ in 0..5 {
-            thread.push(Value::Real(0.0)).unwrap();
-            thread.push(Value::Real(1.0)).unwrap();
+            thread.push(Value::Real(0.0));
+            thread.push(Value::Real(1.0));
             rand(&mut thread).unwrap();
             if let Value::Real(val) = thread.pop().unwrap() {
                 results1.push(val);
@@ -671,8 +669,8 @@ mod tests {
         // Generate same numbers
         let mut results2 = Vec::new();
         for _ in 0..5 {
-            thread.push(Value::Real(0.0)).unwrap();
-            thread.push(Value::Real(1.0)).unwrap();
+            thread.push(Value::Real(0.0));
+            thread.push(Value::Real(1.0));
             rand(&mut thread).unwrap();
             if let Value::Real(val) = thread.pop().unwrap() {
                 results2.push(val);

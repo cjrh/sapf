@@ -34,3 +34,4 @@ The current status of the port is in `sapf-rust/TODO.txt`.
 Refer to that file for where to pick up with the porting work.
 Update `sapf-rust/TODO.txt` when you make progress.
 Use the ht-mcp server to create a terminal session for running commands in the `sapf-rust` directory.
+After you make a change to rust code, always run the tests to check that it works.
