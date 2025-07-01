@@ -240,6 +240,8 @@ impl Value {
                     function.apply(thread)
                 } else if let Some(primitive) = obj.as_any().downcast_ref::<crate::core::function::Primitive>() {
                     primitive.apply(thread)
+                } else if let Some(ast_function) = obj.as_any().downcast_ref::<crate::parser::parser::ASTFunction>() {
+                    ast_function.apply(thread)
                 } else {
                     Err(SapfError::WrongType)
                 }

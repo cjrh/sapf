@@ -3,7 +3,7 @@
 // Parses SAPF tokens into expressions and generates code
 
 use crate::core::error::{SapfError, Result};
-use crate::core::value::{Value, StringObject};
+use crate::core::value::{Value, StringObject, Object};
 use crate::core::symbol::get_symbol;
 use crate::core::list::{List, Array};
 use crate::core::form::{Form, Table};
@@ -12,6 +12,7 @@ use crate::parser::token::{Token, TokenType, Position};
 use crate::vm::thread::Thread;
 use crate::vm::compile_scope::{CompileScope, TopCompileScope, InnerCompileScope, ScopeType};
 use std::sync::Arc;
+use std::any::Any;
 
 
 /// AST Node representing a parsed expression
@@ -49,6 +50,108 @@ pub enum ASTNode {
     
     // Call/execution
     Call(Arc<StringObject>),
+}
+
+/// AST-based function that can execute directly without bytecode
+#[derive(Debug, Clone)]
+pub struct ASTFunction {
+    args: Vec<Arc<StringObject>>,
+    body: Vec<ASTNode>,
+    help: Option<String>,
+}
+
+impl ASTFunction {
+    pub fn new(args: Vec<Arc<StringObject>>, body: Vec<ASTNode>, help: Option<String>) -> Self {
+        Self { args, body, help }
+    }
+}
+
+impl Object for ASTFunction {
+    fn type_name(&self) -> &'static str {
+        "ASTFunction"
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_float(&self) -> Result<f64> {
+        Err(SapfError::WrongType)
+    }
+
+    fn deref(&self) -> Result<Value> {
+        Ok(Value::Object(Arc::new(self.clone())))
+    }
+
+    fn clone_object(&self) -> Arc<dyn Object> {
+        Arc::new(self.clone())
+    }
+
+    fn is_function(&self) -> bool {
+        true
+    }
+}
+
+impl std::fmt::Display for ASTFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\\{} [function body]", 
+               self.args.iter()
+                   .map(|arg| arg.as_str())
+                   .collect::<Vec<_>>()
+                   .join(" "))
+    }
+}
+
+impl ASTFunction {
+    pub fn apply(&self, thread: &mut Thread) -> Result<()> {
+        // Check if we have enough arguments on the stack
+        let num_args = self.args.len();
+        if thread.stack_depth() < num_args {
+            return Err(SapfError::StackUnderflow {
+                expected: num_args,
+                actual: thread.stack_depth(),
+                operation: "AST function call".to_string(),
+            });
+        }
+
+        // Pop arguments from stack and bind them to local variables
+        let mut arg_values = Vec::new();
+        for _ in 0..num_args {
+            arg_values.push(thread.pop()?);
+        }
+        arg_values.reverse(); // Restore original order
+
+        // Store current VM state for argument binding
+        use crate::vm::vm::VM;
+        let vm = VM::instance();
+        let mut old_values = Vec::new();
+
+        // Bind arguments to their names
+        for (i, arg_name) in self.args.iter().enumerate() {
+            // Save old value if it exists
+            let old_value = vm.lookup_by_name(arg_name.as_str());
+            old_values.push(old_value);
+            
+            // Bind new value
+            vm.def_by_name(arg_name.as_str(), arg_values[i].clone())?;
+        }
+
+        // Create a temporary parser to execute the body
+        let parser = Parser::new(Vec::new()); // Empty tokens since we're executing AST
+        
+        // Execute the function body
+        let result = parser.execute(&self.body, thread);
+
+        // Restore old argument values
+        for (i, arg_name) in self.args.iter().enumerate() {
+            if let Some(old_value) = &old_values[i] {
+                vm.def_by_name(arg_name.as_str(), old_value.clone())?;
+            }
+            // TODO: If there was no old value, we should remove the binding
+        }
+
+        result
+    }
 }
 
 /// SAPF Parser for parsing tokenized source code
@@ -299,7 +402,28 @@ impl Parser {
             return Err(SapfError::ParseError("Expected list for lambda body".to_string()));
         };
         
-        Ok(ASTNode::Lambda { args, help, body })
+        let lambda_node = ASTNode::Lambda { args, help, body };
+        
+        // Check if this lambda is being assigned to a variable
+        if matches!(self.current_token().token_type, TokenType::Equal) {
+            self.advance(); // consume =
+            
+            // The next token should be the target variable name
+            if let TokenType::Symbol(target_sym) = &self.current_token().token_type {
+                let target = target_sym.clone();
+                self.advance();
+                
+                Ok(ASTNode::Assignment {
+                    targets: vec![target],
+                    value: Box::new(lambda_node),
+                    is_from_list: false,
+                })
+            } else {
+                Err(SapfError::ParseError("Expected symbol after = in function assignment".to_string()))
+            }
+        } else {
+            Ok(lambda_node)
+        }
     }
 
     /// Compile AST nodes to bytecode
@@ -410,10 +534,14 @@ impl Parser {
                 Ok(())
             }
 
-            ASTNode::Lambda { args: _, help: _, body: _ } => {
-                // Create a function definition
-                // TODO: Implement function creation when bytecode generation is ready
-                // TODO: Create function when bytecode generation is implemented
+            ASTNode::Lambda { args, help, body } => {
+                // Create an AST-based function that can execute directly
+                let ast_function = ASTFunction::new(
+                    args.clone(),
+                    body.clone(),
+                    help.clone(),
+                );
+                thread.push(Value::Object(Arc::new(ast_function)));
                 Ok(())
             }
 
