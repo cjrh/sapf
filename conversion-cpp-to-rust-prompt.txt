@@ -28,6 +28,8 @@ ecosystem; everything should be rust-native.
 UPDATE LOOP PROMPT
 ==================
 
+The prompt below is used to restart a Claude Code dev session after restarting the shell or a machine restart.
+
 Let's continue porting this C++ project to Rust. 
 The rust crate is in the `sapf-rust` directory.
 The current status of the port is in `sapf-rust/TODO.txt`. 

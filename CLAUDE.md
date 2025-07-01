@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SAPF (Sound As Pure Form) is a functional stack-based language for sound synthesis and processing. This repository contains both the original C++ implementation and a modern Rust port that provides equivalent functionality with improved memory safety and performance.
+SAPF (Sound As Pure Form) is a functional stack-based language for sound synthesis and processing. This repository contains both the original C++ implementation and a WIP modern Rust port that provides equivalent functionality with improved memory safety and performance.
 
 ## Development Commands
 
@@ -141,7 +141,7 @@ The SAPF language uses postfix notation:
 ### Key Files for Understanding
 
 **Language Specification:**
-- `README.txt`: Complete language reference and philosophy
+- `README.txt`: Complete language reference and philosophy of the C++ impl
 - `sapf-examples.txt`: Comprehensive usage examples
 - `sapf-prelude.txt`: Standard library definitions
 
