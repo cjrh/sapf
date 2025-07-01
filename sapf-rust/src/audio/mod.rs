@@ -11,10 +11,14 @@
 pub mod input;
 pub mod output;
 pub mod audio_ops;
+pub mod sound_files;
+pub mod sound_file_ops;
 
 pub use input::*;
 pub use output::*;
 pub use audio_ops::*;
+pub use sound_files::*;
+pub use sound_file_ops::*;
 
 use crate::core::{SapfError, Result};
 use crate::dsp::ugen::Sample;
