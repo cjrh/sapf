@@ -158,6 +158,11 @@ impl Value {
         }
     }
     
+    /// Convert to real number (alias for as_float for compatibility)
+    pub fn to_real(&self) -> Result<f64> {
+        self.as_float()
+    }
+    
     /// Get as object, returning error if it's a real number
     pub fn as_object(&self) -> Result<&Arc<dyn Object>> {
         match self {

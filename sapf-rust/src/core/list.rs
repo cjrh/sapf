@@ -480,6 +480,16 @@ impl List {
             self.next = Some(other);
         }
     }
+    
+    /// Get value at index (alias for at() for compatibility)
+    pub fn at_index(&self, _thread: &mut crate::vm::Thread, index: usize) -> Result<Value> {
+        self.at(index)
+    }
+    
+    /// Check if this list is infinite (has a generator)
+    pub fn is_infinite(&self) -> bool {
+        self.is_lazy()
+    }
 }
 
 impl Object for List {

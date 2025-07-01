@@ -7,7 +7,7 @@ mod vm;
 mod parser;
 mod repl;
 mod dsp;
-mod audio;
+// mod audio;  // Temporarily disabled due to threading issues
 
 use anyhow::Result;
 use clap::{Arg, Command};

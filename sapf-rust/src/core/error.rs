@@ -114,6 +114,14 @@ pub enum SapfError {
         expected: usize,
         actual: usize,
     },
+    
+    /// Invalid argument provided
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+    
+    /// Runtime error during execution
+    #[error("Runtime error: {0}")]
+    RuntimeError(String),
 }
 
 /// Result type alias for SAPF operations
@@ -146,6 +154,8 @@ impl SapfError {
             SapfError::EmptyCallStack { .. } => -1020,
             SapfError::WrongArgumentCount { .. } => -1021,
             SapfError::ParseError(_) => -1022,
+            SapfError::InvalidArgument(_) => -1023,
+            SapfError::RuntimeError(_) => -1024,
         }
     }
     
