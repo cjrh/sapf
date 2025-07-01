@@ -2,7 +2,7 @@
 // Rust implementation of SoundFiles.hpp/cpp
 // Thread-safe sound file I/O using hound for WAV files
 
-use crate::core::{Value, Object, List, SapfError};
+use crate::core::{Value, Object, List, Array, SapfError};
 use crate::core::value::StringObject;
 use crate::vm::thread::Thread;
 use crate::dsp::ugen::{UGen, UGenBase};
@@ -23,7 +23,6 @@ const BUF_SIZE: usize = 1024;
 static FILE_COUNT: AtomicI32 = AtomicI32::new(0);
 
 /// Thread-safe sound file reader that implements the UGen trait
-#[derive(Debug)]
 pub struct SFReader {
     reader: Arc<Mutex<Option<WavReader<BufReader<File>>>>>,
     spec: WavSpec,
@@ -70,12 +69,11 @@ impl SFReader {
         // Create a List containing the output channels
         let mut channel_values = Vec::new();
         for channel in channels {
-            // Wrap each channel in a List (as done in C++ version)
-            let channel_list = List::new_with_single_value(Value::Object(channel))?;
-            channel_values.push(Value::Object(channel_list));
+            channel_values.push(Value::Object(channel));
         }
         
-        List::new_from_values(channel_values)
+        let array = Array::from_values(channel_values);
+        Ok(Arc::new(List::from_array(array)))
     }
     
     /// Pull audio data from file (thread-safe)
@@ -165,6 +163,16 @@ impl SFReader {
     }
 }
 
+impl fmt::Debug for SFReader {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("SFReader")
+            .field("spec", &format!("{}ch@{}Hz", self.spec.channels, self.spec.sample_rate))
+            .field("frames_remaining", &"<mutex>")
+            .field("finished", &"<mutex>")
+            .finish()
+    }
+}
+
 impl fmt::Display for SFReader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SFReader({}ch@{}Hz)", self.spec.channels, self.spec.sample_rate)
@@ -202,7 +210,6 @@ impl Object for SFReader {
 }
 
 /// Output channel for sound file reader
-#[derive(Debug)]
 pub struct SFReaderOutputChannel {
     base: UGenBase,
     reader: Arc<Mutex<Option<WavReader<BufReader<File>>>>>,
@@ -247,7 +254,7 @@ impl UGen for SFReaderOutputChannel {
         if *finished {
             // Fill with zeros if finished
             output.fill(0.0);
-            self.base.set_done(true);
+            self.base.set_done();
             return Ok(output.len());
         }
         
@@ -273,8 +280,22 @@ impl UGen for SFReaderOutputChannel {
         self.base.is_done()
     }
     
-    fn set_done(&mut self, done: bool) {
-        self.base.set_done(done);
+    fn set_done(&mut self) {
+        self.base.set_done();
+    }
+    
+    fn ugen_type_name(&self) -> &'static str {
+        "SFReaderOutputChannel"
+    }
+}
+
+impl fmt::Debug for SFReaderOutputChannel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("SFReaderOutputChannel")
+            .field("base", &self.base)
+            .field("current_data", &"<mutex>")
+            .field("data_index", &"<mutex>")
+            .finish()
     }
 }
 
@@ -380,16 +401,20 @@ pub fn sf_write(
     // Determine number of channels and prepare input data
     let (num_channels, audio_inputs) = match data {
         Value::Object(obj) => {
-            if let Some(mut list) = obj.as_any().downcast_ref::<List>() {
+            if let Some(list) = obj.as_any().downcast_ref::<List>() {
                 // Multi-channel case
-                let channels = list.length()?;
+                let channels = if let Some(array) = list.array() {
+                    array.size()
+                } else {
+                    0 // Empty list
+                };
                 if channels > MAX_SF_CHANNELS {
                     return Err(SapfError::OutOfRange);
                 }
                 
                 // TODO: Extract audio data from each channel
                 // This would require implementing audio input extraction
-                (channels, Vec::new())
+                (channels, Vec::<Vec<f64>>::new())
             } else {
                 // Single channel case
                 (1, Vec::new())
@@ -447,7 +472,7 @@ mod tests {
     fn get_test_thread() -> Thread {
         static VM_INSTANCE: OnceLock<VM> = OnceLock::new();
         let vm = VM_INSTANCE.get_or_init(|| VM::new());
-        Thread::new(vm.get_audio_rate())
+        Thread::new()
     }
     
     #[test]
