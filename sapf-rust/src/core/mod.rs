@@ -13,6 +13,7 @@ pub mod math_ops;
 pub mod random_ops;
 pub mod reference;
 pub mod set_ops;
+pub mod stream_ops;
 pub mod symbol;
 pub mod value;
 
