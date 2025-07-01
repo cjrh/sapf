@@ -314,13 +314,89 @@ from C++ to Rust.
 
 ## PHASE 8: Advanced Features (LOW PRIORITY)
 
-### 8.1 Stream Operations
-- [ ] Convert StreamOps.cpp to stream_ops.rs
-  - [ ] Lazy evaluation primitives using List generators
-  - [ ] Infinite sequence operations
-  - [ ] Stream combinators and transformations
+### 8.1 Stream Operations (HIGH PRIORITY - IN PROGRESS)
+- [ ] Convert StreamOps.cpp to stream_ops.rs (~7789 lines, 102+ functions)
+  - **Analysis Complete**: C++ file contains 9 major function categories
+  - **Total Functions**: 60 DEF + 42 DEFAM functions = 102+ stream operations
+  - **Key Insight**: Builds heavily on existing List lazy evaluation (already implemented)
   - Files to reference: src/StreamOps.cpp
-  - **Architecture**: Build on existing List lazy evaluation support
+  - **Architecture**: Generator-based streaming with pull() pattern matching existing UGen design
+
+#### 8.1.1 Basic List Operations (Priority: HIGH)
+- [ ] size, rank, shape, finite - Core list introspection functions
+- [ ] empty, nonempty, head, tail - Basic list access operations  
+- [ ] packed, pack - List compaction operations
+- [ ] Implementation: Direct port using existing List methods and error handling
+
+#### 8.1.2 List Conversion Functions (Priority: HIGH)
+- [ ] V (signal->stream), Z (stream->signal), L/L1 (anything->stream)
+- [ ] unspell (sequence->string) - String conversion utility
+- [ ] Implementation: Type conversion using existing Value enum variants
+
+#### 8.1.3 Generator Infrastructure (Priority: HIGH)
+- [ ] Base Generator trait (extends existing UGen pattern)
+- [ ] By/Byz - Infinite arithmetic sequences (start, step)
+- [ ] NBy/NByz - Finite arithmetic sequences (start, step, count)
+- [ ] Implementation: Follow UGen pull() pattern, integrate with List lazy evaluation
+
+#### 8.1.4 List Generation Functions (Priority: HIGH)  
+- [ ] Infinite generators: ord, nat, invs, negs, evens, odds, ints, primes
+- [ ] Finite generators: ninvs, ninvz, ever, by, nby, grow, ngrow, to
+- [ ] Fibonacci generators: fib (stream), fibz (signal)
+- [ ] Implementation: 18 generator functions using By/NBy infrastructure
+
+#### 8.1.5 List Manipulation (Priority: HIGH)
+- [ ] add, cons, uncons - List construction/deconstruction
+- [ ] reverse, mirror0 - List ordering operations
+- [ ] append ($) - List concatenation
+- [ ] Implementation: Direct operations on List/Array, handle infinite sequences properly
+
+#### 8.1.6 Reduction Operations (Priority: MEDIUM)
+- [ ] reduce, reduce1, scan, scan1 - Fold operations with accumulator
+- [ ] iter, itern, chain - Iterative function application
+- [ ] Implementation: Functional programming primitives using Function trait
+
+#### 8.1.7 Tuple Operations (Priority: MEDIUM)
+- [ ] 2ple through 8ple - Stack->tuple conversion
+- [ ] un2 through un8 - Tuple->stack conversion  
+- [ ] bub, nbub - Single item list creation
+- [ ] Implementation: Template-based tuple operations (16 functions total)
+
+#### 8.1.8 Stream Ordering (Priority: MEDIUM)
+- [ ] cyc, ncyc, rcyc - Cyclic list operations
+- [ ] X, XZ, mum - Repetition and silence generators
+- [ ] Implementation: Cycle detection and repetition logic
+
+#### 8.1.9 DSP and FFT Operations (Priority: LOW)
+- [ ] fft, ifft - Fast Fourier Transform operations
+- [ ] Spectral analysis functions (requires FFT library)
+- [ ] Implementation: Use rustfft crate, handle complex numbers
+
+#### Implementation Strategy:
+1. **Phase 1**: Basic operations + Generator infrastructure (8.1.1-8.1.3)
+2. **Phase 2**: List generation + manipulation (8.1.4-8.1.5)  
+3. **Phase 3**: Advanced operations (8.1.6-8.1.8)
+4. **Phase 4**: DSP operations (8.1.9) - Optional
+
+#### Key Design Decisions:
+- **Generator Pattern**: Reuse UGen pull() pattern for stream generators
+- **Lazy Evaluation**: Build on existing List lazy evaluation infrastructure
+- **Type Safety**: Use Value enum for mixed-type operations
+- **Error Handling**: Consistent SapfError usage throughout
+- **Thread Safety**: Arc<T> for generators that need sharing
+- **Performance**: Block-based processing for audio-rate operations
+
+#### Function Categories Breakdown:
+- **List Conversion** (5 functions): V, Z, L, L1, unspell
+- **Basic Operations** (8 functions): size, rank, shape, finite, empty, head, tail, etc.
+- **Generation** (25 functions): ord, nat, by, fib, primes, etc. 
+- **Reduction** (7 functions): reduce, scan, iter, chain
+- **Manipulation** (15 functions): add, cons, reverse, tuples
+- **Ordering** (8 functions): cyc, append, repeat operations
+- **DSP** (10+ functions): fft, ifft, spectral analysis
+- **Event Lists** (5 functions): Music/timing operations
+- **Audio I/O** (5 functions): Play integration
+- **Miscellaneous** (20+ functions): Advanced stream operations
 
 ### 8.2 Set Operations ✅ (COMPLETED)
 - ✅ Convert SetOps.cpp to set_ops.rs
