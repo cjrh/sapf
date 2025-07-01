@@ -150,7 +150,7 @@ impl CodeGenerator {
                 bytecode.add(OpCode::PushImmediate, Value::Object(sym.clone()));
             }
             
-            ASTNode::Assignment { targets: _, is_from_list: _ } => {
+            ASTNode::Assignment { targets: _, value: _, is_from_list: _ } => {
                 // TODO: Implement variable assignment
                 return Err(SapfError::InternalError);
             }
@@ -271,7 +271,7 @@ impl CodeGenerator {
                 bytecode.add(OpCode::CallImmediate, Value::Object(symbol.clone()));
             }
             
-            ASTNode::Assignment { targets: _, is_from_list: _ } => {
+            ASTNode::Assignment { targets: _, value: _, is_from_list: _ } => {
                 // TODO: Implement variable assignment opcodes
                 // This requires integration with compile scope
                 return Err(SapfError::CompileError(

@@ -40,9 +40,10 @@ pub enum ASTNode {
     Dot(Arc<StringObject>),
     Comma(Arc<StringObject>),
     
-    // Variable operations
+    // Variable operations  
     Assignment {
         targets: Vec<Arc<StringObject>>,
+        value: Box<ASTNode>,
         is_from_list: bool,
     },
     
@@ -156,10 +157,23 @@ impl Parser {
 
             TokenType::Backquote => {
                 self.advance(); // consume `
+                // Check if this is an assignment expression
                 if let TokenType::Symbol(sym) = &self.current_token().token_type {
                     let symbol = sym.clone();
                     self.advance();
-                    Ok(ASTNode::Backquote(symbol))
+                    
+                    // Check for assignment
+                    if matches!(self.current_token().token_type, TokenType::Equal) {
+                        self.advance(); // consume =
+                        let value_expr = self.parse_expression()?;
+                        Ok(ASTNode::Assignment {
+                            targets: vec![symbol],
+                            value: Box::new(value_expr),
+                            is_from_list: false,
+                        })
+                    } else {
+                        Ok(ASTNode::Backquote(symbol))
+                    }
                 } else {
                     Err(SapfError::ParseError("Expected symbol after backquote".to_string()))
                 }
@@ -400,6 +414,75 @@ impl Parser {
                 // Create a function definition
                 // TODO: Implement function creation when bytecode generation is ready
                 // TODO: Create function when bytecode generation is implemented
+                Ok(())
+            }
+
+            ASTNode::Assignment { targets, value, is_from_list: _ } => {
+                // Execute the value expression
+                self.execute_node(value, thread)?;
+                let value_result = thread.pop().map_err(|_| {
+                    SapfError::ParseError("Stack underflow during assignment".to_string())
+                })?;
+                
+                // Assign to all target variables
+                use crate::vm::vm::VM;
+                let vm = VM::instance();
+                for target in targets {
+                    vm.def_by_name(target.as_str(), value_result.clone())?;
+                }
+                Ok(())
+            }
+
+            ASTNode::Backquote(sym) => {
+                // Backquote without assignment - just push the symbol
+                thread.push(Value::Object(sym.clone()));
+                Ok(())
+            }
+
+            ASTNode::Dot(sym) => {
+                // Dot operator - push the symbol (for now, same as backquote)
+                thread.push(Value::Object(sym.clone()));
+                Ok(())
+            }
+
+            ASTNode::Comma(sym) => {
+                // Comma operator - push the symbol (for now, same as backquote)
+                thread.push(Value::Object(sym.clone()));
+                Ok(())
+            }
+
+            ASTNode::Call(sym) => {
+                // Call a symbol - similar to Symbol execution
+                use crate::vm::vm::VM;
+                let vm = VM::instance();
+                
+                if let Some(builtin_value) = vm.lookup_by_name(sym.as_str()) {
+                    if builtin_value.is_callable() {
+                        builtin_value.apply(thread)?;
+                    } else {
+                        thread.push(builtin_value);
+                    }
+                } else {
+                    thread.push(Value::Object(sym.clone()));
+                }
+                Ok(())
+            }
+
+            ASTNode::ZList(elements) => {
+                // Create a numeric list by executing elements
+                let mut list_values = Vec::new();
+                for elem in elements {
+                    self.execute_node(elem, thread)?;
+                    let value = thread.pop().map_err(|_| {
+                        SapfError::ParseError("Stack underflow during zlist creation".to_string())
+                    })?;
+                    list_values.push(value);
+                }
+                list_values.reverse(); // Restore original order
+                
+                let array = Array::from_values(list_values);
+                let list = List::from_array(array);
+                thread.push(Value::Object(Arc::new(list)));
                 Ok(())
             }
 
