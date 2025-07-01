@@ -122,6 +122,10 @@ pub enum SapfError {
     /// Runtime error during execution
     #[error("Runtime error: {0}")]
     RuntimeError(String),
+    
+    /// Audio system error
+    #[error("Audio error: {0}")]
+    AudioError(String),
 }
 
 /// Result type alias for SAPF operations
@@ -156,6 +160,7 @@ impl SapfError {
             SapfError::ParseError(_) => -1022,
             SapfError::InvalidArgument(_) => -1023,
             SapfError::RuntimeError(_) => -1024,
+            SapfError::AudioError(_) => -1025,
         }
     }
     
@@ -178,6 +183,31 @@ impl SapfError {
             -1013 => Some(SapfError::UserQuit),
             _ => None,
         }
+    }
+}
+
+// Audio error conversions
+impl From<cpal::BuildStreamError> for SapfError {
+    fn from(err: cpal::BuildStreamError) -> Self {
+        SapfError::AudioError(format!("Build stream error: {}", err))
+    }
+}
+
+impl From<cpal::PlayStreamError> for SapfError {
+    fn from(err: cpal::PlayStreamError) -> Self {
+        SapfError::AudioError(format!("Play stream error: {}", err))
+    }
+}
+
+impl From<cpal::DevicesError> for SapfError {
+    fn from(err: cpal::DevicesError) -> Self {
+        SapfError::AudioError(format!("Devices error: {}", err))
+    }
+}
+
+impl From<cpal::SupportedStreamConfigsError> for SapfError {
+    fn from(err: cpal::SupportedStreamConfigsError) -> Self {
+        SapfError::AudioError(format!("Stream configs error: {}", err))
     }
 }
 

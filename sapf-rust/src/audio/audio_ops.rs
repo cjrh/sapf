@@ -13,9 +13,13 @@ use std::sync::Arc;
 /// 
 /// Pops a value from the stack and starts audio playback.
 /// Usage: signal play
-fn play_prim(thread: &mut Thread, _prim: &Primitive) -> Result<(), SapfError> {
+fn play_prim(thread: &mut Thread, _prim: &Primitive) -> Result<()> {
     if thread.stack_depth() < 1 {
-        return Err(SapfError::StackUnderflow("play requires 1 argument".to_string()));
+        return Err(SapfError::StackUnderflow { 
+            expected: 1, 
+            actual: thread.stack_depth(), 
+            operation: "play".to_string() 
+        });
     }
 
     let value = thread.pop()?;
@@ -23,7 +27,7 @@ fn play_prim(thread: &mut Thread, _prim: &Primitive) -> Result<(), SapfError> {
     // Create a copy of the thread for audio playback
     // Note: This is a simplified approach - the real implementation would need
     // proper thread/ownership management for audio processing
-    let audio_thread = Thread::new()?;
+    let audio_thread = Thread::new();
     
     match play(audio_thread, value) {
         Ok(player_id) => {
@@ -39,7 +43,7 @@ fn play_prim(thread: &mut Thread, _prim: &Primitive) -> Result<(), SapfError> {
 
 /// Stop all audio playback
 /// Usage: stopall
-fn stop_all_prim(_thread: &mut Thread, _prim: &Primitive) -> Result<(), SapfError> {
+fn stop_all_prim(_thread: &mut Thread, _prim: &Primitive) -> Result<()> {
     match stop_all() {
         Ok(()) => {
             println!("All audio playback stopped");
@@ -54,7 +58,7 @@ fn stop_all_prim(_thread: &mut Thread, _prim: &Primitive) -> Result<(), SapfErro
 
 /// Get audio system information
 /// Usage: audioinfo
-fn audio_info_prim(_thread: &mut Thread, _prim: &Primitive) -> Result<(), SapfError> {
+fn audio_info_prim(_thread: &mut Thread, _prim: &Primitive) -> Result<()> {
     match get_audio_info() {
         Ok(info) => {
             // Push the info as a form/dictionary to the stack
@@ -71,7 +75,7 @@ fn audio_info_prim(_thread: &mut Thread, _prim: &Primitive) -> Result<(), SapfEr
 }
 
 /// Register audio built-in functions with the VM
-pub fn register_audio_builtins(vm: &VM) -> Result<(), SapfError> {
+pub fn register_audio_builtins(vm: &VM) -> Result<()> {
     // Audio playback function
     vm.def_by_name("play", Value::from_object(Arc::new(Primitive::new(
         play_prim, 
@@ -126,11 +130,11 @@ mod tests {
         let vm = VM::new();
         register_audio_builtins(&vm).expect("Should register audio builtins");
         
-        let mut thread = Thread::new().unwrap();
+        let mut thread = Thread::new();
         
         // Test stopall function
         let stop_fn = vm.lookup_by_name("stopall").unwrap();
-        let result = stop_fn.apply(&mut thread, &[]);
+        let result = stop_fn.apply(&mut thread);
         
         // Should not error even if no audio is playing
         assert!(result.is_ok());

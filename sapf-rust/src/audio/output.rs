@@ -29,7 +29,6 @@ pub struct AudioPlayer {
     inputs: Vec<AudioIn>,
     num_channels: usize,
     done: Arc<AtomicBool>,
-    stream: Option<Stream>,
     config: AudioConfig,
 }
 
@@ -45,7 +44,6 @@ impl AudioPlayer {
             inputs,
             num_channels,
             done: Arc::new(AtomicBool::new(false)),
-            stream: None,
             config,
         }
     }
@@ -69,8 +67,9 @@ impl AudioPlayer {
         };
 
         let done_flag = Arc::clone(&self.done);
+        let done_flag_bg = Arc::clone(&self.done);
         let mut inputs = std::mem::take(&mut self.inputs);
-        let mut thread = std::mem::replace(&mut self.thread, Thread::new()?);
+        let mut thread = std::mem::replace(&mut self.thread, Thread::new());
         let num_channels = self.num_channels;
 
         let stream = device.build_output_stream(
@@ -91,7 +90,18 @@ impl AudioPlayer {
         )?;
 
         stream.play()?;
-        self.stream = Some(stream);
+        
+        // Keep the stream alive by moving it to a background thread
+        thread::spawn(move || {
+            // The stream stays alive as long as this thread exists
+            loop {
+                thread::sleep(Duration::from_millis(100));
+                if done_flag_bg.load(Ordering::Relaxed) {
+                    break;
+                }
+            }
+            // Stream will be dropped here when the loop exits
+        });
         
         println!("Audio output started successfully");
         Ok(())
@@ -166,10 +176,8 @@ impl AudioPlayer {
 
     /// Stop the audio player
     fn stop(&mut self) {
-        if let Some(stream) = self.stream.take() {
-            drop(stream); // Stream implements Drop and will stop automatically
-        }
         self.set_done();
+        // The background thread will detect the done flag and stop the stream
     }
 }
 
@@ -365,18 +373,19 @@ fn prepare_audio_inputs(value: Value) -> Result<Vec<AudioIn>> {
     match &value {
         Value::Object(obj) => {
             if let Some(list) = obj.as_any().downcast_ref::<List>() {
-                if list.is_z_list() {
+                if list.is_real_list() {
                     // Single ZList becomes single channel
                     Ok(vec![AudioIn::with_value(value)])
                 } else {
                     // VList with multiple channels
                     let mut inputs = Vec::new();
-                    let len = list.length().min(MAX_CHANNELS);
+                    let mut temp_thread = Thread::new();
                     
-                    for i in 0..len {
-                        match list.at_index(&mut Thread::new()?, i) {
+                    // Try to get elements up to MAX_CHANNELS
+                    for i in 0..MAX_CHANNELS {
+                        match list.at_index(&mut temp_thread, i) {
                             Ok(element) => inputs.push(AudioIn::with_value(element)),
-                            Err(_) => inputs.push(AudioIn::new()), // Fill with silence
+                            Err(_) => break, // End of list reached
                         }
                     }
                     

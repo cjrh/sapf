@@ -86,6 +86,19 @@ impl AudioIn {
             return Ok((num_samples, true));
         }
 
+        // Handle List case specially to avoid borrow conflicts
+        match &self.value {
+            Value::Object(obj) => {
+                if let Some(list) = obj.as_any().downcast_ref::<List>() {
+                    // Clone the list reference to avoid borrow conflicts
+                    let list_clone = list.clone();
+                    return self.fill_from_list(thread, &list_clone, num_samples, output);
+                }
+            }
+            _ => {}
+        }
+
+        // Handle non-list cases
         match &self.value {
             Value::Nil => {
                 // Fill with zeros for nil values
@@ -104,27 +117,22 @@ impl AudioIn {
                 Ok((num_samples, false)) // Constants never finish
             }
             
-            Value::Object(obj) => {
-                if let Some(list) = obj.as_any().downcast_ref::<List>() {
-                    self.fill_from_list(thread, list, num_samples, output)
-                } else if let Some(ugen) = obj.as_any().downcast_ref::<dyn UGen>() {
-                    self.fill_from_ugen(thread, ugen, num_samples, output)
-                } else {
-                    // Try to convert other objects to real values
-                    match self.value.to_real() {
-                        Ok(val) => {
-                            for sample in output.iter_mut().take(num_samples) {
-                                *sample = val;
-                            }
-                            Ok((num_samples, false))
+            Value::Object(_) => {
+                // Try to convert other objects to real values
+                // This includes UGens, which should convert to their frequency/amplitude
+                match self.value.to_real() {
+                    Ok(val) => {
+                        for sample in output.iter_mut().take(num_samples) {
+                            *sample = val;
                         }
-                        Err(_) => {
-                            // Fill with zeros if can't convert
-                            for sample in output.iter_mut().take(num_samples) {
-                                *sample = 0.0;
-                            }
-                            Ok((num_samples, true))
+                        Ok((num_samples, false))
+                    }
+                    Err(_) => {
+                        // Fill with zeros if can't convert
+                        for sample in output.iter_mut().take(num_samples) {
+                            *sample = 0.0;
                         }
+                        Ok((num_samples, true))
                     }
                 }
             }
@@ -159,28 +167,22 @@ impl AudioIn {
             }
         } else {
             // Handle finite lists
-            let list_len = list.length();
             for i in 0..num_samples {
                 if i >= output.len() {
                     break;
                 }
                 
-                if self.offset >= list_len {
-                    // Past end of list, fill with zeros
-                    output[i] = 0.0;
-                    done = true;
-                } else {
-                    match list.at_index(thread, self.offset) {
-                        Ok(value) => {
-                            output[i] = value.to_real().unwrap_or(0.0);
-                            samples_written += 1;
-                            self.offset += 1;
-                        }
-                        Err(_) => {
-                            output[i] = 0.0;
-                            done = true;
-                            break;
-                        }
+                match list.at_index(thread, self.offset) {
+                    Ok(value) => {
+                        output[i] = value.to_real().unwrap_or(0.0);
+                        samples_written += 1;
+                        self.offset += 1;
+                    }
+                    Err(_) => {
+                        // Past end of list, fill with zeros
+                        output[i] = 0.0;
+                        done = true;
+                        break;
                     }
                 }
             }
@@ -193,19 +195,6 @@ impl AudioIn {
         Ok((samples_written, done))
     }
 
-    /// Fill from a UGen (Unit Generator)
-    fn fill_from_ugen(&mut self, _thread: &mut Thread, _ugen: &dyn UGen, num_samples: usize, output: &mut [Sample]) -> Result<(usize, bool)> {
-        // Note: This is tricky because we have an immutable reference to UGen
-        // but UGen::pull() requires &mut self. In the real implementation,
-        // we would need proper ownership/borrowing patterns.
-        
-        // For now, return zeros and mark as done - this would need proper UGen integration
-        for sample in output.iter_mut().take(num_samples) {
-            *sample = 0.0;
-        }
-        self.done = true;
-        Ok((0, true))
-    }
 
     /// Read a single sample value
     /// Equivalent to C++ ZIn::onez()
@@ -215,19 +204,14 @@ impl AudioIn {
             Value::Real(r) => Ok(*r),
             Value::Object(obj) => {
                 if let Some(list) = obj.as_any().downcast_ref::<List>() {
-                    if self.offset >= list.length() {
-                        self.done = true;
-                        Ok(0.0)
-                    } else {
-                        match list.at_index(thread, self.offset) {
-                            Ok(value) => {
-                                self.offset += 1;
-                                Ok(value.to_real().unwrap_or(0.0))
-                            }
-                            Err(_) => {
-                                self.done = true;
-                                Ok(0.0)
-                            }
+                    match list.at_index(thread, self.offset) {
+                        Ok(value) => {
+                            self.offset += 1;
+                            Ok(value.to_real().unwrap_or(0.0))
+                        }
+                        Err(_) => {
+                            self.done = true;
+                            Ok(0.0)
                         }
                     }
                 } else {
@@ -245,13 +229,9 @@ impl AudioIn {
             Value::Real(r) => Ok(*r),
             Value::Object(obj) => {
                 if let Some(list) = obj.as_any().downcast_ref::<List>() {
-                    if self.offset >= list.length() {
-                        Ok(0.0)
-                    } else {
-                        match list.at_index(thread, self.offset) {
-                            Ok(value) => Ok(value.to_real().unwrap_or(0.0)),
-                            Err(_) => Ok(0.0),
-                        }
+                    match list.at_index(thread, self.offset) {
+                        Ok(value) => Ok(value.to_real().unwrap_or(0.0)),
+                        Err(_) => Ok(0.0),
                     }
                 } else {
                     self.value.to_real().or(Ok(0.0))
@@ -287,7 +267,7 @@ mod tests {
 
     #[test]
     fn test_audio_in_constant() {
-        let mut thread = Thread::new().unwrap();
+        let mut thread = Thread::new();
         let mut input = AudioIn::with_value(Value::Real(0.5));
         
         let mut buffer = [0.0; 4];
@@ -300,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_audio_in_nil() {
-        let mut thread = Thread::new().unwrap();
+        let mut thread = Thread::new();
         let mut input = AudioIn::new();
         
         let mut buffer = [1.0; 4]; // Pre-fill with non-zero
@@ -313,7 +293,7 @@ mod tests {
 
     #[test]
     fn test_audio_in_read_one() {
-        let mut thread = Thread::new().unwrap();
+        let mut thread = Thread::new();
         let mut input = AudioIn::with_value(Value::Real(0.75));
         
         let sample = input.read_one(&mut thread).unwrap();
@@ -322,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_audio_in_peek() {
-        let mut thread = Thread::new().unwrap();
+        let mut thread = Thread::new();
         let input = AudioIn::with_value(Value::Real(0.25));
         
         let sample = input.peek(&mut thread).unwrap();
